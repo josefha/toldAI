@@ -114,3 +114,25 @@ test("research requires actual retrieved citations and rejects fabricated script
 test("missing configuration fails closed without printing values", () => {
   assert.throws(() => readConfig({}), /Missing or invalid configuration/);
 });
+
+test("transcription uses the language field supported by each model", async () => {
+  const stub = mock.method(globalThis, "fetch", async (_url: any, options: any) => {
+    const form = options.body as FormData;
+    if (form.get("model") === "gpt-transcribe") {
+      assert.deepEqual(form.getAll("languages[]"), ["en"]);
+      assert.equal(form.has("language"), false);
+    } else {
+      assert.equal(form.get("language"), "en");
+      assert.equal(form.has("languages[]"), false);
+    }
+    return Response.json({ text: "Explain this story." });
+  });
+  try {
+    for (const model of ["gpt-transcribe", "gpt-4o-mini-transcribe"]) {
+      const provider = new Providers({ ...config, OPENAI_TRANSCRIBE_MODEL: model });
+      assert.equal(await provider.transcribe(Buffer.from("test"), new AbortController().signal), "Explain this story.");
+    }
+  } finally {
+    stub.mock.restore();
+  }
+});

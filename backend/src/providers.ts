@@ -279,7 +279,11 @@ export class Providers {
       new Blob([new Uint8Array(audio)], { type: "audio/mp4" }),
       "question.m4a",
     );
-    form.set("language", "en");
+    if (this.config.OPENAI_TRANSCRIBE_MODEL === "gpt-transcribe") {
+      form.append("languages[]", "en");
+    } else {
+      form.set("language", "en");
+    }
     const response = await fetch(
       "https://api.openai.com/v1/audio/transcriptions",
       {
