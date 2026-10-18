@@ -31,19 +31,25 @@ private struct AuthTokens: Codable {
     let user: User
     var expires: Date { Date(timeIntervalSince1970: expires_at ?? 0) }
 }
-private enum CredentialStore {
+enum CredentialStore {
     static let service = "com.toldai.auth"
-    static func read() -> Data? {
+    static func read(account: String = "session") -> Data? {
         var result: CFTypeRef?
-        let query: [String: Any] = [kSecClass as String:kSecClassGenericPassword,kSecAttrService as String:service,kSecAttrAccount as String:"session",kSecReturnData as String:true,kSecMatchLimit as String:kSecMatchLimitOne]
+        let query: [String: Any] = [kSecClass as String:kSecClassGenericPassword,kSecAttrService as String:service,kSecAttrAccount as String:account,kSecReturnData as String:true,kSecMatchLimit as String:kSecMatchLimitOne]
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess else { return nil }; return result as? Data
     }
-    static func save(_ data: Data) throws {
-        clear()
-        let status = SecItemAdd([kSecClass as String:kSecClassGenericPassword,kSecAttrService as String:service,kSecAttrAccount as String:"session",kSecValueData as String:data,kSecAttrAccessible as String:kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly] as CFDictionary, nil)
+    static func save(_ data: Data, account: String = "session") throws {
+        let query: [String: Any] = [kSecClass as String:kSecClassGenericPassword,kSecAttrService as String:service,kSecAttrAccount as String:account]
+        var status = SecItemUpdate(query as CFDictionary, [kSecValueData as String:data] as CFDictionary)
+        if status == errSecItemNotFound {
+            var item = query
+            item[kSecValueData as String] = data
+            item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            status = SecItemAdd(item as CFDictionary, nil)
+        }
         guard status == errSecSuccess else { throw APIError(message: "Your sign-in could not be saved securely. Please try again.") }
     }
-    static func clear() { SecItemDelete([kSecClass as String:kSecClassGenericPassword,kSecAttrService as String:service,kSecAttrAccount as String:"session"] as CFDictionary) }
+    static func clear(account: String = "session") { SecItemDelete([kSecClass as String:kSecClassGenericPassword,kSecAttrService as String:service,kSecAttrAccount as String:account] as CFDictionary) }
 }
 @MainActor final class LiveBackend: AuthRepository, NewsRepository, ProfileRepository {
     let configuration: AppConfiguration

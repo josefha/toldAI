@@ -2,6 +2,18 @@ import XCTest
 @testable import Told
 
 @MainActor final class ToldTests: XCTestCase {
+    func testKeychainPersistsAndUpdatesSessionData() throws {
+        let account = "test-\(UUID().uuidString)"
+        defer { CredentialStore.clear(account: account) }
+        let first = Data("first-test-session".utf8)
+        let refreshed = Data("refreshed-test-session".utf8)
+        try CredentialStore.save(first, account: account)
+        XCTAssertEqual(CredentialStore.read(account: account), first)
+        try CredentialStore.save(refreshed, account: account)
+        XCTAssertEqual(CredentialStore.read(account: account), refreshed)
+        CredentialStore.clear(account: account)
+        XCTAssertNil(CredentialStore.read(account: account))
+    }
     var local: LocalStore!
     var controls: DemoControls!
     var backend: MockBackend!

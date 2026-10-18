@@ -31,10 +31,12 @@ From the repository root:
 ```sh
 xcodebuild -project ios/Told.xcodeproj -scheme Told \
   -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
-  -derivedDataPath /tmp/told-derived test CODE_SIGNING_ALLOWED=NO
+  -derivedDataPath /tmp/told-derived test CODE_SIGN_IDENTITY=-
 ```
 
 Unit tests inject test repositories and audio from the **test bundle**. UI tests cover signed-out layouts without bypassing authentication. Paid authenticated journeys are covered by the deployment smoke checklist after credentials are configured.
+
+Keep simulator code signing enabled: the ad-hoc identity above lets Xcode supply the simulated application identifier required for Keychain access. Do not install a build made with `CODE_SIGNING_ALLOWED=NO` for live sign-in testing. The Keychain persistence test exercises real secure storage with an isolated test account name.
 
 `ruby ios/scripts/generate_project.rb` regenerates the checked-in project when adding files (requires the `xcodeproj` Ruby gem). Keep project changes in that script. `--dark` and `--large-type` are layout-check launch arguments; neither changes service behavior.
 
