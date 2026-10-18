@@ -118,7 +118,7 @@ import Observation
     }
     private func loadAudio(_ resource: String) {
         player?.stop(); player = nil; isPlaying = false; error = nil
-        guard let url = audioResolver(resource) else { error = "This audio isn’t downloaded. Try another story."; player = nil; return }
+        guard let url = audioResolver(resource) else { error = "This audio isn’t downloaded. Pull down to refresh Home, then open the story again."; player = nil; return }
         do {
             let audio = try AVAudioPlayer(contentsOf: url)
             audio.enableRate = true; audio.rate = speed; audio.delegate = self; audio.prepareToPlay()
@@ -127,7 +127,7 @@ import Observation
     }
     func start(_ briefing: Briefing, at index: Int = 0) {
         guard briefing.stories.indices.contains(index) else { return }
-        if self.briefing?.id == briefing.id, self.story?.id == briefing.stories[index].id, !isAnswer { if !isTransitioning { play() }; return }
+        if self.briefing?.id == briefing.id, self.story?.id == briefing.stories[index].id, !isAnswer, player != nil { if !isTransitioning { play() }; return }
         cancelTransition(); selectedSegmentID = nil
         deepDives = []; activeAnswer = nil
         self.briefing = briefing; self.index = index; checkpointPosition = nil; isAnswer = false

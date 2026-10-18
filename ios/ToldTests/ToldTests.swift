@@ -82,7 +82,8 @@ import AVFoundation
         audio.pause()
     }
     func testRefreshDoesNotReplaceActiveQueueAndSignOutClears() async throws {
-        let app = AppModel(auth: backend, news: backend, profiles: backend, store: local)
+        var cacheCleared = false
+        let app = AppModel(auth: backend, news: backend, profiles: backend, store: local, clearAudioCache: { cacheCleared = true })
         try await app.accept(UserSession(userID: "test", email: "test@example.com"))
         await app.refresh()
         app.start(app.briefing!)
@@ -92,6 +93,7 @@ import AVFoundation
         XCTAssertEqual(app.briefing?.stories.count, 0)
         XCTAssertEqual(app.playback.briefing, active)
         await app.signOut()
+        XCTAssertTrue(cacheCleared)
         XCTAssertNil(app.session); XCTAssertNil(app.playback.story)
         let session: UserSession? = local.load("session")
         XCTAssertNil(session)
@@ -239,6 +241,20 @@ import AVFoundation
         audio.clear()
         try await Task.sleep(for: .milliseconds(1100))
         XCTAssertNil(audio.briefing); XCTAssertFalse(audio.isPlaying); XCTAssertFalse(audio.isTransitioning)
+    }
+
+    func testSameStoryCanRecoverAfterAudioIsDownloadedAgain() async throws {
+        var downloaded = false
+        let audio = PlaybackController(store: local, audioResolver: { downloaded ? Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") : nil })
+        let briefing = try await backend.dailyBriefing(interests: [])
+        audio.start(briefing)
+        XCTAssertNotNil(audio.error); XCTAssertFalse(audio.isPlaying)
+        downloaded = true
+        audio.start(briefing)
+        XCTAssertNil(audio.error); XCTAssertTrue(audio.isTransitioning)
+        try await Task.sleep(for: .milliseconds(1100))
+        XCTAssertTrue(audio.isPlaying)
+        audio.pause()
     }
 
 }

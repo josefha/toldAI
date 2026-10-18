@@ -18,7 +18,9 @@ import Observation
     var restoringSession = false
     var sessionError: String?
     private var refreshID = UUID()
-    init(auth: any AuthRepository, news: any NewsRepository, profiles: any ProfileRepository, store: LocalStore) {
+    private let clearAudioCache: @MainActor () -> Void
+    init(auth: any AuthRepository, news: any NewsRepository, profiles: any ProfileRepository, store: LocalStore, clearAudioCache: @escaping @MainActor () -> Void = { AudioCache.clear() }) {
+        self.clearAudioCache = clearAudioCache
         self.auth = auth; self.news = news; self.profiles = profiles; self.store = store
         session = auth.currentSession; profile = store.load("profile"); briefing = store.load("briefing")
         playback = PlaybackController(store: store)
@@ -63,7 +65,7 @@ import Observation
         conversation.cancel()
         refreshID = UUID(); playback.clear(); showPlayer = false; selectedTab = 0
         session = nil; profile = nil; briefing = nil; store.clear(); feedError = nil
-        AudioCache.clear()
+        clearAudioCache()
         await auth.signOut()
     }
 }
