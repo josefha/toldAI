@@ -3,6 +3,9 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(AppModel.self) private var model
     @State private var confirmingSignOut = false
+    @State private var confirmingDelete = false
+    @State private var deleting = false
+    @State private var accountError: String?
     var body: some View {
         List {
             Section {
@@ -16,14 +19,18 @@ struct ProfileView: View {
                 NavigationLink { if let profile = model.profile { PlaybackSettingsView(profile: profile) } } label: { Label("Voice & Playback", systemImage: "waveform") }
             }
             Section("About") {
-                if ProcessInfo.processInfo.arguments.contains("--developer-tools") || ProcessInfo.processInfo.arguments.contains("--ui-testing") {
-                NavigationLink { DemoSettingsView() } label: { Label("Developer Tools", systemImage: "wrench.and.screwdriver") }
-                }
                 NavigationLink { AboutView() } label: { Label("About told.", systemImage: "info.circle") }
                 Text("English").foregroundStyle(.secondary)
             }
             Section { Button("Sign Out", role: .destructive) { confirmingSignOut = true }.frame(minHeight: 44).accessibilityIdentifier("signOut") }
+            Section {
+                if let accountError { ErrorNotice(message: accountError) }
+                Button(deleting ? "Deleting…" : "Delete Account", role: .destructive) { confirmingDelete = true }.disabled(deleting)
+            }
         }.navigationTitle("You")
+            .confirmationDialog("Permanently delete your account and listening history?", isPresented: $confirmingDelete, titleVisibility: .visible) {
+                Button("Delete Account", role: .destructive) { Task { deleting = true; defer { deleting = false }; do { try await model.news.deleteAccount(); await model.signOut() } catch { accountError = error.localizedDescription } } }
+            }
             .confirmationDialog("Sign out of told.?", isPresented: $confirmingSignOut, titleVisibility: .visible) {
                 Button("Sign Out", role: .destructive) { Task { await model.signOut() } }.accessibilityIdentifier("confirmSignOut")
             }
@@ -69,21 +76,6 @@ struct PlaybackSettingsView: View {
         }.navigationTitle("Voice & Playback").navigationBarTitleDisplayMode(.inline).onChange(of: profile) { _, _ in saved = false }
     }
 }
-struct DemoSettingsView: View {
-    @Environment(AppModel.self) private var model
-    var body: some View {
-        @Bindable var controls = model.controls
-        Form {
-            Section("Service scenarios") {
-                Toggle("Offline", isOn: $controls.offline)
-                Toggle("Fail next request", isOn: $controls.failNextRequest)
-                Toggle("Return empty briefing", isOn: $controls.emptyBriefing)
-                Text("Pull to refresh Home or submit a question to try these states. Downloaded audio remains playable.").font(.caption).foregroundStyle(.secondary)
-            }
-            Section("Conversation") { Toggle("Deny microphone access", isOn: $controls.denyMicrophone); Text("Recording is always simulated; this switch tests the typed-input fallback.").font(.caption).foregroundStyle(.secondary) }
-        }.navigationTitle("Developer Tools").navigationBarTitleDisplayMode(.inline)
-    }
-}
 struct AboutView: View {
     var body: some View {
         ScrollView { VStack(alignment: .leading, spacing: 24) {
@@ -91,7 +83,7 @@ struct AboutView: View {
             Text("A little closer to the story.").font(.largeTitle.weight(.medium))
             Text("Five stories. A fresh perspective. Space to follow your curiosity.")
             Text("Listen at your own pace. Pause for a question, explore the background, then pick up where you left off.")
-            Text("Your profile and listening position stay on this device until you sign out.").foregroundStyle(Theme.secondary)
+            Text("Your profile is saved to your account. Downloaded audio and listening position stay on this device until you sign out.").foregroundStyle(Theme.secondary)
         }.padding(24) }.navigationTitle("About").navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -1,4 +1,6 @@
-# Frontend verification
+# Historical frontend verification
+
+These results describe the earlier fixture-backed frontend. See [live implementation verification](../backend/VERIFICATION.md) for the current application and backend.
 
 2026-10-18 · Xcode 16.0 · iOS 18.0 simulators.
 

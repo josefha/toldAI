@@ -18,6 +18,7 @@ import Observation
     var error: String?
     var speed: Float = 1 { didSet { player?.rate = speed; persist() } }
     private var player: AVAudioPlayer?
+    private let audioResolver: (String) -> URL?
     private var ticker: Timer?
     private let store: LocalStore
     private var checkpointPosition: Double?
@@ -80,13 +81,17 @@ import Observation
     private func cancelTransition() {
         transitionTask?.cancel(); transitionTask = nil; transitionID = UUID(); isTransitioning = false
     }
-    init(store: LocalStore) {
+    init(store: LocalStore, audioResolver: ((String) -> URL?)? = nil) {
+        self.audioResolver = audioResolver ?? { AudioCache.url($0) }
         self.store = store
         super.init()
         if let saved: PlaybackCheckpoint = store.load("playback"), saved.briefing.stories.indices.contains(saved.index) {
             briefing = saved.briefing; index = saved.index; speed = saved.speed
-            loadAudio(saved.briefing.stories[index].audioResource)
-            seek(saved.position)
+            deepDives = saved.deepDives ?? []
+            if let answer = deepDives.first(where: { $0.id == saved.activeAnswerID })?.answer {
+                activeAnswer = answer; isAnswer = true; checkpointPosition = saved.position
+                loadAudio(answer.audioResource); seek(saved.answerPosition ?? 0)
+            } else { loadAudio(saved.briefing.stories[index].audioResource); seek(saved.position) }
         }
         ticker = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] timer in
             guard let self else { timer.invalidate(); return }
@@ -94,7 +99,7 @@ import Observation
                 guard let player = self.player else { return }
                 self.position = player.currentTime
                 self.isPlaying = player.isPlaying
-                if !self.isAnswer { self.persist() }
+                self.persist()
                 if self.isPlaying, let segment = self.segments.first(where: { $0.id == self.currentSegmentID }), self.position >= segment.end - 0.04 {
                     self.finishCurrentSegment()
                 }
@@ -109,7 +114,7 @@ import Observation
     }
     private func loadAudio(_ resource: String) {
         player?.stop(); isPlaying = false; error = nil
-        guard let url = Bundle.main.url(forResource: resource, withExtension: "aiff") else { error = "This audio isn’t downloaded. Try another story."; player = nil; return }
+        guard let url = audioResolver(resource) else { error = "This audio isn’t downloaded. Try another story."; player = nil; return }
         do {
             let audio = try AVAudioPlayer(contentsOf: url)
             audio.enableRate = true; audio.rate = speed; audio.delegate = self; audio.prepareToPlay()
@@ -200,7 +205,7 @@ import Observation
     func clear() { cancelTransition(); selectedSegmentID = nil; deepDives = []; activeAnswer = nil; player?.stop(); player = nil; briefing = nil; index = 0; position = 0; isPlaying = false; isAnswer = false; checkpointPosition = nil }
     private func persist() {
         guard let briefing else { return }
-        store.save(PlaybackCheckpoint(briefing: briefing, index: index, position: checkpointPosition ?? position, speed: speed), key: "playback")
+        store.save(PlaybackCheckpoint(briefing: briefing, index: index, position: checkpointPosition ?? position, speed: speed, deepDives: deepDives, activeAnswerID: activeAnswer?.id, answerPosition: isAnswer ? position : nil), key: "playback")
     }
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         Task { @MainActor in

@@ -1,4 +1,5 @@
 import Foundation
+@testable import Told
 
 enum Fixtures {
     static let durations: [String: Double] = ["technology": 19.49, "planet": 20.30, "science": 19.02, "culture": 19.56, "business": 21.26]

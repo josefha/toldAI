@@ -2,6 +2,8 @@ import SwiftUI
 
 struct AskView: View {
     @Environment(AppModel.self) private var model
+    @State private var recorder = MicrophoneRecorder()
+    @Environment(\.scenePhase) private var scenePhase
     @State private var draft = ""
     @State private var typing = false
     @State private var listening = false
@@ -22,18 +24,14 @@ struct AskView: View {
                     Button("Cancel") { cancel() }.frame(minHeight: 44)
                 } else if listening {
                     ListeningIndicator()
-                    Button("Start Listening") { draft = suggestions[0]; listening = false; submit() }.buttonStyle(PrimaryButtonStyle()).accessibilityIdentifier("sendVoiceQuestion")
-                    Button("Cancel") { listening = false }.frame(minHeight: 44)
+                    Button("Start Listening") { sendRecording() }.buttonStyle(PrimaryButtonStyle()).accessibilityIdentifier("sendVoiceQuestion")
+                    Button("Cancel") { recorder.cancel(); listening = false }.frame(minHeight: 44)
                 } else {
                     if typing {
                         TextField("What would you like to know?", text: $draft, axis: .vertical).lineLimit(3...6).padding(18).background(Theme.surface, in: RoundedRectangle(cornerRadius: 20)).focused($focused).accessibilityIdentifier("researchField")
                         Button("Start Listening") { submit() }.buttonStyle(PrimaryButtonStyle()).disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty).accessibilityIdentifier("submitResearch")
                     }
-                    AskControls(prefix: "topic", voice: {
-                        model.playback.pause(); focused = false
-                        if model.controls.denyMicrophone { typing = true; error = "Microphone access is denied. Type your question below." }
-                        else { error = nil; listening = true }
-                    }, text: { typing = true; focused = true })
+                    AskControls(prefix: "topic", voice: { startRecording() }, text: { typing = true; focused = true })
                 }
                 if let error { ErrorNotice(message: error) { submit() } }
                 if !busy && !listening {
@@ -47,7 +45,24 @@ struct AskView: View {
             }.padding(24)
         }.background(Theme.canvas).scrollDismissesKeyboard(.interactively).navigationTitle("Ask").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false }.accessibilityIdentifier("dismissAskKeyboard") } }
-            .onDisappear { cancel(); listening = false }
+            .onDisappear { cancel(); recorder.cancel(); listening = false }
+            .onChange(of: scenePhase) { _, phase in if phase != .active { recorder.cancel(); listening = false } }
+    }
+    private func startRecording() {
+        cancel(); focused = false; model.playback.pause(); error = nil
+        let id = UUID(); requestID = id
+        task = Task { do { try await recorder.start(); guard requestID == id, !Task.isCancelled else { recorder.cancel(); return }; listening = true } catch { guard requestID == id else { return }; self.error = error.localizedDescription; typing = true } }
+    }
+    private func sendRecording() {
+        let id = UUID(); requestID = id; listening = false; busy = true; error = nil
+        task = Task {
+            do {
+                let file = try recorder.stop(); defer { try? FileManager.default.removeItem(at: file) }
+                let question = try await model.news.transcribe(file)
+                guard requestID == id, !Task.isCancelled else { return }
+                draft = question; busy = false; submit()
+            } catch { guard requestID == id, !Task.isCancelled else { return }; busy = false; self.error = error.localizedDescription; typing = true }
+        }
     }
     private func cancel() { task?.cancel(); task = nil; requestID = UUID(); busy = false }
     private func submit() {

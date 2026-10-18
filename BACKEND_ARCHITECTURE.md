@@ -1,6 +1,6 @@
 # toldAI backend architecture
 
-Decision date: 2026-10-18. Status: architecture proposal for implementation.
+Decision date: 2026-10-18. Status: longer-term architecture direction. The shipped v1 is described in [deployment and tradeoffs](docs/backend/DEPLOYMENT.md) and the [live API contract](docs/frontend/API_CONTRACT.md); those documents take precedence over unimplemented proposals below.
 
 The core product is five stories matched to the listener's interests, with short original summaries, linked evidence, and audio. The listener can press Ask to discuss a story or search for a specific topic. Sourcing and story selection are core product capabilities and must be easy to improve without rebuilding the player or replacing the whole backend.
 

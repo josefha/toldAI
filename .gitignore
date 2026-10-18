@@ -7,3 +7,14 @@ build/
 xcuserdata/
 *.xcresult
 .DS_Store
+
+# Credentials and dependencies
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+coverage/
+ios/Config/Local.xcconfig
+supabase/.temp/
+supabase/.branches/

@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>ToldAPIURL</key><string>$(TOLD_API_URL)</string>
+    <key>ToldSupabaseURL</key><string>$(TOLD_SUPABASE_URL)</string>
+    <key>ToldSupabaseKey</key><string>$(TOLD_SUPABASE_KEY)</string>
+    <key>NSMicrophoneUsageDescription</key><string>Record your question to explore a story with told.</string>
     <key>UIBackgroundModes</key>
     <array><string>audio</string></array>
 </dict>

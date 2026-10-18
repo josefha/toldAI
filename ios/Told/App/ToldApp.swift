@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main struct ToldApp: App {
-    @State private var model = AppModel.demo()
+    @State private var model = AppModel.live()
     var body: some Scene {
         WindowGroup {
             RootView().environment(model).tint(Theme.ink)
@@ -16,9 +16,15 @@ struct RootView: View {
     var body: some View {
         Group {
             if model.session == nil { SignInView() }
+            else if model.profile == nil {
+                VStack(spacing: 20) {
+                    if let error = model.sessionError { ErrorNotice(message: error) { Task { await model.restoreSession() } }; Button("Sign Out") { Task { await model.signOut() } } }
+                    else { ProgressView("Opening your account…") }
+                }.padding(24)
+            }
             else if model.profile?.completedOnboarding != true { InterestSetupView() }
             else { MainTabs() }
-        }.background(Theme.canvas).foregroundStyle(Theme.ink)
+        }.background(Theme.canvas).foregroundStyle(Theme.ink).task { await model.restoreSession() }
     }
 }
 struct MainTabs: View {
@@ -32,7 +38,7 @@ struct MainTabs: View {
             NavigationStack { ProfileView() }.modifier(MiniPlayerInset()).tabItem { Label("You", systemImage: "person.crop.circle") }.tag(2)
         }
         .sheet(isPresented: $model.showPlayer) { PlayerView(model: model).environment(\.dynamicTypeSize, typeSize).presentationDragIndicator(.visible).presentationCornerRadius(32) }
-        .task { if model.briefing == nil { await model.refresh() } }
+        .task { if model.briefing == nil || !Calendar.current.isDateInToday(model.briefing!.generatedAt) { await model.refresh() } }
     }
 }
 // Inset each tab's navigation content so pushed lists and scroll views reserve

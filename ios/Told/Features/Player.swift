@@ -26,9 +26,9 @@ struct PlayerView: View {
                             Button { playback.skip(-1) } label: { Image(systemName: "backward.end.fill").frame(width: 44, height: 44) }.disabled(playback.index == 0).accessibilityLabel("Previous story")
                             Button { playback.toggle() } label: { Image(systemName: playback.isPlaying || playback.isTransitioning ? "pause.fill" : "play.fill").font(.title2).frame(width: 56, height: 56) }.accessibilityLabel(playback.isPlaying || playback.isTransitioning ? "Pause" : "Play").accessibilityIdentifier("playerTransport")
                             Button { playback.skip(1) } label: { Image(systemName: "forward.end.fill").frame(width: 44, height: 44) }.disabled(playback.index + 1 >= (playback.briefing?.stories.count ?? 0)).accessibilityLabel("Next story")
-                        }.disabled(conversation.phase == .recording || conversation.phase == .researching || conversation.phase == .composing || conversation.phase == .failed)
+                        }.disabled(conversation.phase == .recording || conversation.phase == .researching || conversation.phase == .transcribing || conversation.phase == .composing || conversation.phase == .failed)
                         if conversation.phase != .recording {
-                            AskControls(voice: { conversation.recordDemo() }, text: { conversation.begin() })
+                            AskControls(voice: { conversation.startRecording() }, text: { conversation.begin() })
                         }
                         if playback.isAnswer {
                             Button("Back to Story") { conversation.cancel(resume: true) }.frame(minHeight: 44).accessibilityIdentifier("continueListening")
@@ -65,14 +65,14 @@ struct PlayerView: View {
             switch conversation.phase {
             case .recording:
                 ListeningIndicator()
-                Button("Send Question") { conversation.sendDemoRecording() }.buttonStyle(PrimaryButtonStyle()).accessibilityIdentifier("sendVoiceQuestion")
+                Button("Send Question") { conversation.sendRecording() }.buttonStyle(PrimaryButtonStyle()).accessibilityIdentifier("sendVoiceQuestion")
                 Button("Cancel") { conversation.cancel(resume: true) }.frame(minHeight: 44)
             case .composing, .failed:
                 TextField("What are you curious about?", text: $conversation.draft, axis: .vertical).lineLimit(2...5).textFieldStyle(.roundedBorder).accessibilityIdentifier("questionField")
                 Button("Send Question") { conversation.submit() }.buttonStyle(PrimaryButtonStyle()).disabled(conversation.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty).accessibilityIdentifier("sendQuestion")
                 Button("Cancel") { conversation.cancel(resume: true) }.frame(minHeight: 44)
-            case .researching:
-                HStack { ProgressView(); Text("Following your question…") }.frame(minHeight: 60)
+            case .researching, .transcribing:
+                HStack { ProgressView(); Text(conversation.phase == .transcribing ? "Transcribing your question…" : "Following your question…") }.frame(minHeight: 60)
                 Button("Cancel") { conversation.cancel(resume: true) }.frame(minHeight: 44)
             case .answered:
                 if let answer = model.playback.activeAnswer {

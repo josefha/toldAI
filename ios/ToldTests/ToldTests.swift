@@ -42,9 +42,9 @@ import XCTest
     }
     func testQuestionCancelRejectsLateAnswerAndRestoresCheckpoint() async throws {
         let briefing = try await backend.dailyBriefing(interests: [])
-        let audio = PlaybackController(store: local)
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
         audio.start(briefing); audio.seek(8); audio.pause()
-        let conversation = ConversationModel(news: backend, playback: audio, controls: controls)
+        let conversation = ConversationModel(news: backend, playback: audio, recorder: TestRecorder(controls: controls))
         conversation.begin(); conversation.draft = "Why?"; conversation.submit(); conversation.cancel()
         try await Task.sleep(for: .milliseconds(50))
         XCTAssertEqual(conversation.phase, .idle)
@@ -55,9 +55,9 @@ import XCTest
     }
     func testAnswerContinueRestoresStoryAndPosition() async throws {
         let briefing = try await backend.dailyBriefing(interests: [])
-        let audio = PlaybackController(store: local)
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
         audio.start(briefing, at: 1); audio.seek(12); audio.pause()
-        let conversation = ConversationModel(news: backend, playback: audio, controls: controls)
+        let conversation = ConversationModel(news: backend, playback: audio, recorder: TestRecorder(controls: controls))
         conversation.begin(); conversation.draft = "Explain"; conversation.submit()
         try await Task.sleep(for: .milliseconds(100))
         XCTAssertEqual(conversation.phase, .answered)
@@ -69,8 +69,8 @@ import XCTest
         audio.pause()
     }
     func testRefreshDoesNotReplaceActiveQueueAndSignOutClears() async throws {
-        let app = AppModel(auth: backend, news: backend, profiles: backend, store: local, controls: controls)
-        try await app.accept(DemoSession(userID: "test", email: "test@example.com"))
+        let app = AppModel(auth: backend, news: backend, profiles: backend, store: local)
+        try await app.accept(UserSession(userID: "test", email: "test@example.com"))
         await app.refresh()
         app.start(app.briefing!)
         let active = app.playback.briefing
@@ -80,15 +80,16 @@ import XCTest
         XCTAssertEqual(app.playback.briefing, active)
         await app.signOut()
         XCTAssertNil(app.session); XCTAssertNil(app.playback.story)
-        let session: DemoSession? = local.load("session")
+        let session: UserSession? = local.load("session")
         XCTAssertNil(session)
     }
 
     func testDeniedMicrophoneAndFailedQuestionCanRecover() async throws {
         let briefing = try await backend.dailyBriefing(interests: [])
-        let audio = PlaybackController(store: local); audio.start(briefing); audio.seek(5); audio.pause()
-        let conversation = ConversationModel(news: backend, playback: audio, controls: controls)
-        controls.denyMicrophone = true; conversation.recordDemo()
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") }); audio.start(briefing); audio.seek(5); audio.pause()
+        let conversation = ConversationModel(news: backend, playback: audio, recorder: TestRecorder(controls: controls))
+        controls.denyMicrophone = true; conversation.startRecording()
+        try await Task.sleep(for: .milliseconds(30))
         XCTAssertEqual(conversation.phase, .composing); XCTAssertNotNil(conversation.error)
         controls.failNextRequest = true; conversation.draft = "Why?"; conversation.submit()
         try await Task.sleep(for: .milliseconds(100))
@@ -100,8 +101,8 @@ import XCTest
     }
     func testPlaybackRestoreIsPausedAndSeekClamped() async throws {
         let briefing = try await backend.dailyBriefing(interests: [])
-        let audio = PlaybackController(store: local); audio.start(briefing, at: 2); audio.seek(6); audio.pause()
-        let restored = PlaybackController(store: local)
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") }); audio.start(briefing, at: 2); audio.seek(6); audio.pause()
+        let restored = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
         XCTAssertEqual(restored.story?.id, briefing.stories[2].id)
         XCTAssertEqual(restored.position, 6, accuracy: 0.4); XCTAssertFalse(restored.isPlaying)
         restored.seek(-100); XCTAssertEqual(restored.position, 0)
@@ -109,17 +110,18 @@ import XCTest
     }
 
     func testFollowUpCutsAnswerAndAutomaticallyResumesOriginalPosition() async throws {
-        let audio = PlaybackController(store: local)
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
         audio.start(try await backend.dailyBriefing(interests: [])); audio.seek(7); audio.pause()
-        let conversation = ConversationModel(news: backend, playback: audio, controls: controls)
+        let conversation = ConversationModel(news: backend, playback: audio, recorder: TestRecorder(controls: controls))
         conversation.begin(); conversation.draft = "Why?"; conversation.submit()
         try await Task.sleep(for: .milliseconds(80))
         audio.seek(3)
-        conversation.recordDemo()
+        conversation.startRecording()
+        try await Task.sleep(for: .milliseconds(30))
         XCTAssertFalse(audio.isPlaying)
         XCTAssertEqual(audio.deepDives.count, 1)
         XCTAssertTrue(audio.deepDives[0].interrupted)
-        conversation.sendDemoRecording()
+        conversation.sendRecording()
         try await Task.sleep(for: .milliseconds(80))
         XCTAssertEqual(audio.deepDives.count, 2)
         XCTAssertEqual(audio.deepDives[1].storyPosition, 7, accuracy: 0.4)
@@ -139,13 +141,13 @@ import XCTest
         let second = try await backend.podcast(question: "Ocean science")
         XCTAssertNotEqual(first.id, second.id)
         XCTAssertEqual(first.stories.first?.title, "Ocean science")
-        let audio = PlaybackController(store: local); audio.start(first)
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") }); audio.start(first)
         XCTAssertTrue(audio.isPlaying); XCTAssertEqual(audio.briefing?.id, first.id)
         audio.pause()
     }
 
     func testTimelineInsertionAndScrubbingAcrossStoryAndDive() async throws {
-        let audio = PlaybackController(store: local)
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
         let briefing = try await backend.dailyBriefing(interests: [])
         audio.start(briefing); audio.seek(6); audio.beginQuestion()
         let answer = try await backend.research(QuestionRequest(requestID: UUID(), question: "Why?", storyID: audio.story?.id, previousTurns: []))
@@ -167,7 +169,7 @@ import XCTest
         audio.pause()
     }
     func testCancelTransitionPreventsUnexpectedResume() async throws {
-        let audio = PlaybackController(store: local)
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
         audio.start(try await backend.dailyBriefing(interests: [])); audio.seek(4); audio.beginQuestion()
         let answer = try await backend.research(QuestionRequest(requestID: UUID(), question: "Why?", storyID: audio.story?.id, previousTurns: []))
         audio.playAnswer(answer); audio.finishCurrentSegment()
@@ -177,6 +179,22 @@ import XCTest
         XCTAssertFalse(audio.isPlaying); XCTAssertTrue(audio.isAnswer)
         audio.seekSession(1)
         XCTAssertFalse(audio.isTransitioning); XCTAssertEqual(audio.position, 1, accuracy: 0.1)
+    }
+
+    func testDeepDiveTimelineRestoresPausedAtAnswerPosition() async throws {
+        let resolve: (String) -> URL? = { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") }
+        let audio = PlaybackController(store: local, audioResolver: resolve)
+        audio.start(try await backend.dailyBriefing(interests: [])); audio.seek(9); audio.beginQuestion()
+        let answer = try await backend.research(QuestionRequest(requestID: UUID(), question: "Why?", storyID: audio.story?.id, previousTurns: []))
+        audio.playAnswer(answer); audio.seek(2); audio.pause()
+        let restored = PlaybackController(store: local, audioResolver: resolve)
+        XCTAssertEqual(restored.deepDives.count, 1)
+        XCTAssertEqual(restored.activeAnswer?.id, answer.id)
+        XCTAssertEqual(restored.position, 2, accuracy: 0.1)
+        XCTAssertEqual(restored.sessionDuration, audio.sessionDuration, accuracy: 0.1)
+        XCTAssertFalse(restored.isPlaying)
+        restored.restoreStory(resume: false)
+        XCTAssertEqual(restored.position, 9, accuracy: 0.1)
     }
 
 }

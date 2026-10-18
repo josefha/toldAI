@@ -1,0 +1,25 @@
+name: Checks
+on: [push, pull_request]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci --prefix backend
+      - run: npm run --prefix backend check
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.75.0
+      - run: supabase start -x studio,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime,imgproxy > /tmp/supabase-start.log 2>&1
+      - run: bash backend/test/run-local.sh
+      - run: docker build -t told-api .
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -project ios/Told.xcodeproj -scheme Told -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO

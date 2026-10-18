@@ -1,0 +1,5 @@
+// Public connection settings only. Provider keys belong on the server.
+TOLD_API_URL = https:/$()/YOUR_API_HOST
+TOLD_SUPABASE_URL = https:/$()/YOUR_PROJECT.supabase.co
+TOLD_SUPABASE_KEY =
+#include? "Local.xcconfig"

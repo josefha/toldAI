@@ -22,7 +22,7 @@ struct Story: Codable, Identifiable, Hashable {
     let transcript: String
     let sources: [NewsSource]
     let artworkID: String
-    let audioResource: String
+    var audioResource: String
     let duration: Double
 }
 struct Briefing: Codable, Identifiable, Hashable {
@@ -30,8 +30,7 @@ struct Briefing: Codable, Identifiable, Hashable {
     let title: String
     let generatedAt: Date
     let artworkID: String
-    let stories: [Story]
-    let isDemo: Bool
+    var stories: [Story]
     var duration: Double { stories.reduce(0) { $0 + $1.duration } }
 }
 struct UserProfile: Codable, Equatable {
@@ -52,14 +51,13 @@ enum VoiceModel: String, Codable, CaseIterable, Identifiable {
     var title: String { self == .v4 ? "Eleven v4" : "Eleven v4 Turbo" }
 }
 struct AuthChallenge: Codable { let email: String; let expiresAt: Date; let resendAt: Date }
-struct DemoSession: Codable { let userID: String; let email: String }
+struct UserSession: Codable { let userID: String; let email: String }
 struct ResearchAnswer: Codable, Identifiable, Hashable {
     let id: String
     let question: String
     let text: String
     let sources: [NewsSource]
-    let audioResource: String
-    let isDemo: Bool
+    var audioResource: String
 }
 struct QuestionRequest: Codable {
     let requestID: UUID
@@ -72,22 +70,12 @@ struct PlaybackCheckpoint: Codable {
     let index: Int
     let position: Double
     let speed: Float
-}
-enum ServiceFailure: LocalizedError {
-    case offline, simulated, invalidCode, expiredCode, invalidEmail, noResults
-    var errorDescription: String? {
-        switch self {
-        case .offline: "You’re offline. Downloaded stories still work. Try again when you’re connected."
-        case .simulated: "This request couldn’t finish. Please try again."
-        case .invalidCode: "That code doesn’t match. Please try again."
-        case .expiredCode: "This code has expired. Request a new one."
-        case .invalidEmail: "Enter a valid email address."
-        case .noResults: "There isn’t enough evidence for an answer. Try a more specific question."
-        }
-    }
+    var deepDives: [DeepDive]? = nil
+    var activeAnswerID: String? = nil
+    var answerPosition: Double? = nil
 }
 
-struct DeepDive: Identifiable {
+struct DeepDive: Codable, Identifiable {
     let id: String
     let storyID: String
     let storyPosition: Double

@@ -1,0 +1,3 @@
+TOLD_API_URL = https:/$()/api.example.com
+TOLD_SUPABASE_URL = https:/$()/YOUR_PROJECT.supabase.co
+TOLD_SUPABASE_KEY = sb_publishable_REPLACE_ME

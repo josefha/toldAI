@@ -9,12 +9,14 @@ Dir.glob(File.join(root, 'Told', '**', '*.swift')).sort.each do |file|
   app.source_build_phase.add_file_reference(ref)
 end
 group.new_file('Info.plist')
+config_ref = project.main_group.new_file('Config/App.xcconfig')
 resources = group.new_group('Resources', 'Resources')
 app.resources_build_phase.add_file_reference(resources.new_file('Assets.xcassets'))
 Dir.glob(File.join(root, 'Told', 'Resources', '*.aiff')).sort.each do |file|
   app.resources_build_phase.add_file_reference(resources.new_file(File.basename(file)))
 end
 app.build_configurations.each do |config|
+  config.base_configuration_reference = config_ref
   config.build_settings.delete('ASSETCATALOG_COMPILER_APPICON_NAME')
   config.build_settings.delete('ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME')
   config.build_settings.merge!({
@@ -37,6 +39,11 @@ ui = project.new_target(:ui_test_bundle, 'ToldUITests', :ios, '18.0')
   testgroup = project.main_group.new_group(target.name, target.name)
   Dir.glob(File.join(root, target.name, '*.swift')).sort.each do |file|
     target.source_build_phase.add_file_reference(testgroup.new_file(File.basename(file)))
+  end
+  if target == tests
+    Dir.glob(File.join(root, 'ToldTests', 'Resources', '*.aiff')).each do |file|
+      target.resources_build_phase.add_file_reference(testgroup.new_file('Resources/' + File.basename(file)))
+    end
   end
   target.build_configurations.each do |config|
     config.build_settings.merge!({'PRODUCT_BUNDLE_IDENTIFIER' => "com.toldai.#{target.name}", 'SWIFT_VERSION' => '5.0', 'GENERATE_INFOPLIST_FILE' => 'YES', 'TARGETED_DEVICE_FAMILY' => '1', 'CODE_SIGN_STYLE' => 'Automatic'})

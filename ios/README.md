@@ -1,54 +1,49 @@
-# told. — SwiftUI frontend
+# told. for iPhone
 
-Native iPhone preview, iOS 18+, Xcode 16+. Open `Told.xcodeproj`, select the **Told** scheme and an iPhone simulator, then Run. No API keys, package downloads, Supabase project, or backend are required.
+Native SwiftUI, iOS 18+, Xcode 16+. The app uses the real backend only.
 
-## Try it
+## Configure
 
-1. Enter any valid-shaped email address. No email is sent. Use demo code **123456**.
-2. Choose interests and optionally enter your name.
-3. Play the daily briefing. Audio is bundled spoken sample content, not ElevenLabs.
-4. Try pause, seeking, speed, next/previous, Sources, Summary, Transcript, and collapse/reopen.
-5. Press Ask to listen, or the message icon to type. Send inserts a deep dive; a follow-up interrupts that answer. Playback automatically returns to the story afterward. The primary Ask button is simulated and does not access the microphone.
-6. Open Ask and choose a prompt, type, or use voice input to start a podcast in the shared player. Results and voice transcription remain fixtures.
-7. In You, edit profile/interests/location, save voice-model preferences, or, when launched with `--developer-tools`, open Developer Tools (offline, next-request failure, empty feed, denied microphone).
-8. Sign Out clears local demo identity, profile, briefing and playback checkpoint. OTP is one-time within a running demo instance; expired/invalid paths are tested.
+1. Follow [backend deployment](../docs/backend/DEPLOYMENT.md).
+2. Copy `ios/Config/Local.xcconfig.example` to `ios/Config/Local.xcconfig`.
+3. Set the HTTPS API URL, Supabase URL, and Supabase **publishable** key. Preserve the `https:/$()/` syntax: xcconfig treats a literal double slash as a comment.
+4. Open `ios/Told.xcodeproj`, select Told and an iPhone simulator, then Run.
 
-The edition, profile and paused listening position survive relaunch. Artwork stays pinned to the cached edition. All source links are example reference destinations, not citations for current news.
+Never put service-role, OpenAI, or ElevenLabs secrets in the app. Tokens are stored in Keychain. The signed-in profile, downloaded edition, audio, and paused timeline are cached locally; signing out clears them. Source URLs open in the system browser.
 
-## Build and tests
+For a device/archive, choose your signing team and a unique bundle identifier (the checked-in development identifier is `com.toldai.preview`). Configure the public connection settings for Release as well. App Store icon, privacy disclosures, distribution signing, and store metadata remain account/release setup tasks.
+
+## Flows
+
+- Real email OTP → interests → daily five.
+- Ask records up to 60 seconds, transcribes, researches, and inserts a narrated answer. The adjacent message button opens typed input.
+- Follow-up questions cut the active answer at the current position and insert another deep dive. Scrubbing uses one timeline; completed answers hold briefly before narration continues.
+- Ask tab starts a sourced episode from a typed or spoken question.
+- Profile saves interests, optional location, playback speed, and separate v4/v4 Turbo preferences for briefings and answers. English is the first supported language. Location is saved but does not yet filter the shared daily edition.
+- Account deletion removes authentication and personal database records, plus personal generated audio. Shared daily audio is not owned by one account.
+
+## Build and test
+
+From the repository root:
 
 ```sh
-xcodebuild -project ios/Told.xcodeproj -scheme Told \
-  -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
-  -derivedDataPath /tmp/told-derived build CODE_SIGNING_ALLOWED=NO
-
 xcodebuild -project ios/Told.xcodeproj -scheme Told \
   -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
   -derivedDataPath /tmp/told-derived test CODE_SIGNING_ALLOWED=NO
 ```
 
-Commands above run from the repository root. On a physical device choose your own signing team and unique bundle identifier. The default bundle ID is `com.toldai.preview`; this is not an App Store release configuration.
+Unit tests inject test repositories and audio from the **test bundle**. UI tests cover signed-out layouts without bypassing authentication. Paid authenticated journeys are covered by the deployment smoke checklist after credentials are configured.
 
-Launch arguments: `--reset-demo` clears this app's demo data; `--ui-testing` shortens mock delays and exposes Developer Tools. `--developer-tools` exposes those controls without changing timing. UI tests use both and include simulator screenshot attachments.
-
-The checked-in Xcode project is ready to open. `ruby ios/scripts/generate_project.rb` regenerates it when adding files (requires the `xcodeproj` Ruby gem, already available on the development machine). Regeneration replaces project metadata, so keep custom project changes in that script.
+`ruby ios/scripts/generate_project.rb` regenerates the checked-in project when adding files (requires the `xcodeproj` Ruby gem). Keep project changes in that script. `--dark` and `--large-type` are layout-check launch arguments; neither changes service behavior.
 
 ## Code map
 
-- `Models/Domain.swift`: Codable data contracts.
-- `Services/Repositories.swift`: auth/news/profile interfaces, cancellation-aware async mocks and isolated demo persistence.
-- `Services/Fixtures.swift`: five fixture stories and example reference links.
-- `Services/PlaybackController.swift`: one AVAudioPlayer owner, queue, speed, seek, checkpoints and interruption handling.
-- `App/AppModel.swift`: composition root, session/feed coordination and question lifecycle.
-- `Design/Components.swift`: semantic colors, wordmark, illustrated cards, standard button styles.
-- `Features/`: native sign-in, onboarding, Home/details, player/conversation, Ask/podcast and profile screens.
+- `Models/Domain.swift`: transport-independent Codable models and timeline segments.
+- `Services/Repositories.swift`: injected auth/news/profile interfaces and local cache.
+- `Services/LiveBackend.swift`: Supabase OTP/refresh, Keychain, authenticated job API, private audio download.
+- `Services/MicrophoneRecorder.swift`: native permission, AAC recording and cleanup.
+- `Services/PlaybackController.swift`: queue, continuous timeline, branches, seek, speed, checkpoints and audio interruptions.
+- `App/AppModel.swift`: composition, profile/feed coordination and question lifecycle.
+- `Features/`: sign-in, onboarding, Home, player, Ask and profile.
 
-See `docs/frontend/API_CONTRACT.md` for backend replacement boundaries. Real credentials must use Keychain; this preview stores only fake sessions and local demo data in UserDefaults. The app does not make auth, research or speech API calls. Opening an explicit source link uses the system browser.
-
-## Current release boundaries
-
-One illustration per initial art family is bundled; additional rotating variants can be added through the artwork manifest later. Science/business/culture currently reuse the initial family. The production app icon and vector logo master remain future brand deliverables. Custom shows, live news, real OTP delivery, microphone/transcription, ElevenLabs output, streaming, lock-screen remote controls and production account deletion are outside this mocked frontend slice.
-
-Simulator verification does not replace real-device audio-route, background playback, VoiceOver, energy and performance checks. See `docs/frontend/VERIFICATION.md` for actual results.
-
-The middle Ask tab starts a question-led podcast in the shared player. Example prompts, voice input, and typed questions use the same mock podcast boundary. Source discovery and transcription remain mocked.
+See [verification and remaining device checks](../docs/backend/VERIFICATION.md).

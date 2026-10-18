@@ -2,19 +2,19 @@
 
 An illustrated, conversational news briefing for iPhone. Five stories matched to your interests, with room to pause, ask, and continue.
 
-## Frontend v1
+SwiftUI iOS 18 app + TypeScript API and worker + Supabase Auth/Postgres/Storage. OpenAI researches public reporting and transcribes questions; ElevenLabs v4 and v4 Turbo narrate the results. The application has no mock mode or bundled sample audio. Test doubles live only in test targets.
 
-Open [ios/Told.xcodeproj](ios/Told.xcodeproj) in Xcode 16+, select **Told** and an iOS 18 iPhone simulator, and Run. The entire frontend works with local mock services and bundled spoken audio. No backend configuration or API keys are needed.
+## Run and deploy
 
-**Demo sign-in:** any valid-shaped email address, code **123456**. No email is sent.
+Start with the [deployment guide](docs/backend/DEPLOYMENT.md). Configure Supabase, server credentials, and the three public iOS connection settings, then open `ios/Told.xcodeproj` in Xcode 16+.
 
-[Run instructions and feature guide](ios/README.md) · [Implementation plan](docs/frontend/IMPLEMENTATION_PLAN.md) · [API/data contract](docs/frontend/API_CONTRACT.md) · [Verification](docs/frontend/VERIFICATION.md)
+- [iOS setup and flows](ios/README.md)
+- [API contract](docs/frontend/API_CONTRACT.md)
+- [Implementation and verification](docs/backend/VERIFICATION.md)
+- [Brand book](docs/design/BRAND_BOOK.md) · [Approved concept](docs/design/card-direction-v2.png)
+- [Native interactions](docs/design/UI_FOUNDATION.md) · [Artwork system](docs/design/ARTWORK_SYSTEM.md)
+- [Longer-term architecture](BACKEND_ARCHITECTURE.md)
 
-## Design and architecture
+Email sign-in uses a real six-digit code. Voice questions record the microphone, pause narration, and insert a sourced answer into the same continuous timeline. The Ask tab creates a new episode using the same player. Daily editions are shared by interest group and cached locally after download.
 
-- [Brand book](docs/design/BRAND_BOOK.md) and [approved concept](docs/design/card-direction-v2.png)
-- [Native UI interactions](docs/design/UI_FOUNDATION.md)
-- [Artwork system](docs/design/ARTWORK_SYSTEM.md)
-- [Backend architecture](BACKEND_ARCHITECTURE.md)
-
-The preview labels sample news and prepared answers. Live email authentication, sourcing, transcription, and Eleven v4/v4 Turbo synthesis are the next integration layer, behind the injected service contracts. Custom shows, calendar, weather, and email inbox integrations are not part of this v1 frontend.
+The implementation is ready to configure and deploy. Paid provider calls and external email delivery still need verification with your accounts. Audio currently downloads as complete clips; streaming, location-specific sourcing, licensed premium feeds, and lock-screen transport controls are deferred. Calendar and weather are outside the product scope.

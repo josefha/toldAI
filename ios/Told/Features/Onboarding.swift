@@ -5,7 +5,7 @@ struct SignInView: View {
     @State private var email = ""
     @State private var code = ""
     @State private var challenge: AuthChallenge?
-    @State private var verifiedSession: DemoSession?
+    @State private var verifiedSession: UserSession?
     @State private var busy = false
     @State private var error: String?
     @FocusState private var focused: Bool
@@ -52,7 +52,7 @@ struct SignInView: View {
         busy = true; error = nil; defer { busy = false }
         do {
             if let challenge {
-                let session: DemoSession
+                let session: UserSession
                 if let verifiedSession { session = verifiedSession } else { session = try await model.auth.verifyCode(email: challenge.email, code: code); verifiedSession = session }
                 try await model.accept(session)
             } else { challenge = try await model.auth.sendCode(email: email.trimmingCharacters(in: .whitespacesAndNewlines)) }

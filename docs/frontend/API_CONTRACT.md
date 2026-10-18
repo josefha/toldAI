@@ -1,58 +1,53 @@
-# Frontend service contract · v1
+# Live API and frontend contract
 
-Source of truth for the running mock: `ios/Told/Models/Domain.swift` and `Services/Repositories.swift`. Swift Codable types define the frontend schema before any database tables are created. Supabase tables can later implement these contracts without making screens depend on database rows.
+Implemented in `backend/src/domain.ts`, `backend/src/api.ts`, and `ios/Told/Models/Domain.swift`. All `/v1` routes require `Authorization: Bearer <Supabase access token>`. The API validates identity with Supabase; client-supplied user IDs never determine ownership. JSON responses use camelCase domain fields, UUID identifiers, seconds for durations, and ISO-8601 UTC timestamps.
 
-## Boundaries
+## Routes
 
-| Interface | Operations | Live replacement |
-|---|---|---|
-| AuthRepository | sendCode(email), verifyCode(email, code), signOut | Supabase Swift email OTP adapter; configure token email template and production SMTP |
-| ProfileRepository | load(userID), save(profile) | Authenticated profile API / Supabase with owner RLS |
-| NewsRepository | dailyBriefing(interests), search(query), research(request) | TypeScript API adapter with authenticated requests |
-| PlaybackController | start/pause/seek/speed/skip, checkpoint, answer, restore | Keep playback client-side; replace bundled audio loader with downloaded/streamed assets |
-| LocalStore | Codable demo session/profile/briefing/checkpoint | Cache remains local; real session credentials must use Keychain, not UserDefaults |
+| Route | Behavior |
+|---|---|
+| `GET /health` | Process liveness |
+| `GET /ready` | Database connectivity |
+| `GET /v1/me` | Profile, or defaults for a new authenticated account |
+| `PATCH /v1/me` | Validate and save profile; identity/email come from auth |
+| `DELETE /v1/me` | Cancel work, delete personal audio, delete auth user and cascading personal rows |
+| `POST /v1/jobs` | Durable generation, HTTP 202 `{id,status}` |
+| `GET /v1/jobs/:id` | Owner-only `{id,status,error,result}`; completed audio links are signed for one hour |
+| `DELETE /v1/jobs/:id` | Best-effort cancellation of queued/running work, HTTP 204 |
+| `POST /v1/transcriptions` | Multipart field `file`, M4A audio, ≤8 MiB → `{text}` |
 
-All repositories are injected into AppModel. Views do not instantiate the mock or call the network. AppModel.demo() is the current composition root. The mocks are asynchronous, cancellation-aware and can fail/offline/return empty content. They use local fixtures; source links do not represent fetched evidence.
+Auth uses Supabase `/auth/v1/otp`, `/verify`, `/token?grant_type=refresh_token`, and `/logout` directly. Use a six-digit email template. The client serializes refresh requests and stores credentials in Keychain.
 
-## Domain fields
+## Job input and result
 
-- UserProfile: userID, email, name, interests[], optional location (empty string in mock), language `en`, playbackSpeed, briefingVoiceModel, answerVoiceModel, completedOnboarding.
-- Interest: stable category ID; title/artwork mapping is client presentation data.
-- NewsSource: id, name, title, url, note. Live service should additionally expose publication/retrieval timestamps and evidence/access classification once backend policy is implemented.
-- Story: id, title, category, summary, transcript, sources[], artworkID, audioResource, duration in seconds.
-- Briefing: id, title, generatedAt, artworkID, ordered stories[], isDemo. Zero stories is a valid empty result; cached editions remain usable on request failure.
-- QuestionRequest: requestID UUID (idempotency/cancellation correlation), question, optional storyID, previousTurns[]. Live API should accept server-owned conversation IDs rather than trusting client history as evidence.
-- ResearchAnswer: id, question, text, sources[], audioResource, isDemo.
-- PlaybackCheckpoint: full cached briefing, index, position seconds, speed. Live persistence may store IDs plus versions; the downloaded queue must remain resolvable offline.
+```json
+{"kind":"daily","requestID":"UUID"}
+{"kind":"podcast","requestID":"UUID","question":"What happened in Swedish politics in the last 24 hours?"}
+{"kind":"question","requestID":"UUID","question":"Why does that matter?","storyID":"UUID","previousAnswerIDs":["UUID"]}
+```
 
-`audioResource` is deliberately a bundle name in this prototype. Before live integration replace it with an AudioAsset descriptor (ID/version, authenticated URL or stream descriptor, duration, MIME type, optional timing metadata). Likewise resolve artworkID through a versioned manifest. Keep transport-specific URLs out of view code.
+Daily/podcast results are `Briefing`; question results are `ResearchAnswer`. A request ID is idempotent for the same owner and input; reuse with different input returns 409. Question history is read from server-owned answers, never accepted as arbitrary transcript evidence. At most 12 prior answer IDs are accepted.
 
-## Proposed HTTP mapping
+States: `queued`, `running`, `completed`, `failed`, `cancelled`. iOS polls every two seconds for up to 15 minutes. Workers use two-minute leases renewed every ten seconds, at most three claims, and a 14-minute generation timeout. Cancelled or stale client responses cannot start playback.
 
-These routes are a proposed backend contract, not implemented endpoints. Use JSON, ISO-8601 UTC timestamps, stable string IDs, and explicit seconds units. Configure JSONDecoder date strategy in the live adapter; local demo cache currently uses Foundation's native date encoding.
+Errors use `{error: "Readable explanation"}`. Validation returns 400; auth 401; inaccessible resources 404; onboarding/idempotency conflicts 409; oversized recordings 413; insufficient evidence 422; quotas 429. Generation failures appear on the job. The UI preserves existing content and offers retry; no fixture fallback exists.
 
-- GET /v1/me → UserProfile; PATCH /v1/me → validated UserProfile.
-- GET /v1/briefings/today → Briefing; server selects by authenticated profile. No untrusted userID override.
-- POST /v1/podcasts { question } → Briefing. This replaces the Search tab’s story-list query; the Ask tab opens the result in the shared player. A live implementation researches the topic and produces an opening chapter before returning playable audio.
-- POST /v1/questions → question request; use requestID as idempotency key. Initially return ResearchAnswer asynchronously; a job/SSE adapter can later emit truthful research and audio states.
-- Auth operations use Supabase directly, not a parallel password database.
+## Domain
 
-Error envelope: { code, message, retryable, requestID, retryAfterSeconds? }. Distinguish unauthenticated, rate-limited, offline/network, insufficient evidence, and service failure. Do not expose provider credentials or raw internal errors. Cancel URLSession work and invalidate the local request ID so late responses cannot start audio. Server cancellation is best-effort and separate from immediately stopping client playback.
+- `UserProfile`: userID, email, name, interests[], location, language (`en`), playbackSpeed, briefingVoiceModel, answerVoiceModel, completedOnboarding.
+- Interest IDs: `technology`, `planet`, `science`, `culture`, `business`.
+- Voice IDs: `eleven_v4`, `eleven_v4_turbo`; configured voice identity is server-side.
+- `NewsSource`: id, name, title, url, note. URLs must come from retrieved OpenAI web-search citations. V1 does not persist a separate article evidence archive or structured publication dates.
+- `Story`: id, title, category, summary, transcript, sources[], artworkID, audioResource, duration.
+- `Briefing`: id, title, generatedAt, artworkID, stories[]. Daily generation requires five sourced stories; the whole job fails if a required clip cannot be prepared.
+- `ResearchAnswer`: id, question, text, sources[], audioResource.
 
-## Integration checklist
+The API returns signed URLs in `audioResource`. The client downloads them and replaces that field with a local UUID filename before publishing content to views. Narration uses the exact stored transcript/answer text.
 
-Replace mocks one interface at a time. Use one verified auth identity and ownership checks. Keep service role, OpenAI and ElevenLabs credentials on backend only. Test Eleven v4 and v4 Turbo independently; current dropdowns persist model preferences but bundled sample audio does not change voice. Real microphone capture/transcription remains a separate service implementation; the current voice flow is simulated behind the same controls used by typing.
+## Client boundaries and timeline
 
-No live Supabase configuration, SQL migration, email, paid generation, or web search is performed by this app.
+`AppModel.live()` injects one `LiveBackend` through AuthRepository, ProfileRepository, and NewsRepository. Views depend on these interfaces, not Supabase rows or provider response formats. LocalStore caches non-secret content; AudioCache stores downloaded MP3 files excluded from backup.
 
-## Evolving listening session
+PlaybackController derives one ordered timeline by splitting stories at deep-dive insertion offsets. Interrupted answers retain their heard duration. Later story content shifts forward; scrubbing resolves session time to an audio file and offset. Branch markers and a legend supplement color. Natural answer completion holds for 1.4 seconds before continuing; pause, seek, skip, a new question, or sign-out cancels that transition.
 
-The shared PlaybackController owns the original story checkpoint and an ordered DeepDive history (answer, story ID, insertion position, heard duration, interruption status). A follow-up stops the active answer without changing the original return point. Answer completion automatically restores that point and resumes narration; Back to Story does so immediately. Collapsing the player preserves answer playback. A new session clears the previous session's branches.
-
-AppModel owns ConversationModel so player presentation does not create a separate conversation. Input cancellation invalidates outstanding requests. Ask input uses NewsRepository.podcast(question:) and only replaces the current listening session after successful generation. Production needs stable segment IDs, parent segment/offset, persisted session history, and audio/transcript timing. Current branch history is in memory; relaunch restores the original story checkpoint paused. Mock podcast generation uses bundled topic audio, not live news or prompt-specific speech.
-
-## Continuous timeline
-
-`ListeningSegment` describes a playable range of a story or answer. The player derives one chronological session timeline by splitting each story at its deep-dive insertion offsets. Interrupted answers retain only their heard duration; later content shifts forward as answers are inserted. Scrubbing uses session time and resolves it to the appropriate audio resource and source offset. Segment boundaries also drive playback, including replay of inserted answers.
-
-Natural deep-dive completion holds the answer and end marker for 1.4 seconds with a continuation label before starting the next story range. Pause, new questions, seeking, skipping, sign-out and session replacement invalidate that pending transition. Session durations exclude this silent UI transition. The native accessibility adjustable action seeks the same timeline in 15-second increments; branch markers and a legend supplement color.
+The paused checkpoint includes the briefing, deep-dive history, active answer, answer offset, original story offset, and speed. It restores locally after relaunch. Cross-device playback sync and transcript-level alignment are deferred.
