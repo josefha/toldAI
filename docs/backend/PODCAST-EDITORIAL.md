@@ -25,3 +25,9 @@ The optional direction request has an eight-second deadline. Failure, invalid ou
 This is an expressive delivery layer in told's existing OpenAI-agent → ElevenLabs v4/v4 Turbo pipeline. It is **not** a hosted ElevenLabs Agent or its Expressive Mode switch. Hosted Agents also manage conversational state/turn taking and would require a separate integration decision. We continue to use press-to-ask, the existing research and citation rules, and recorded clips in the shared timeline. We do not currently infer emotions from the user's raw voice.
 
 Documentation: https://elevenlabs.io/docs/help-center/product/core-capabilities/text-to-speech/how-do-audio-tags-work-with-eleven-v3-and-v4 and https://elevenlabs.io/docs/eleven-agents/customization/voice/expressive-mode
+
+## Player cues
+
+The iOS player synthesizes its own quiet felt-bell tones locally: two notes over 0.65 seconds before a new story, or one note over 0.38 seconds before an answer, followed by 0.3 seconds before narration. Automatic changes between stories first wait one second. Returning from a deep dive to the same story retains the 1.4-second breathing pause without a new-story cue. Pause/resume and timeline scrubbing do not replay cues. Manual story skips use the cue without the inter-story wait.
+
+Cues play only after local narration audio has loaded. Pausing, asking, skipping, clearing the session, audio interruption or headphone removal cancels pending cue playback. Cue failure falls through to speech. Voice & Playback includes a local, immediately saved Transition sounds toggle; turning it off silences cues while retaining breathing pauses. Cues are outside the story timeline and do not change narration positions or deep-dive checkpoints.

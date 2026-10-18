@@ -1,4 +1,5 @@
 import XCTest
+import AVFoundation
 @testable import Told
 
 @MainActor final class ToldTests: XCTestCase {
@@ -137,7 +138,7 @@ import XCTest
         try await Task.sleep(for: .milliseconds(80))
         XCTAssertEqual(audio.deepDives.count, 2)
         XCTAssertEqual(audio.deepDives[1].storyPosition, 7, accuracy: 0.4)
-        audio.finishCurrentSegment()
+        audio.pause(); audio.finishCurrentSegment()
         XCTAssertTrue(audio.isTransitioning)
         let endOfDive = audio.sessionPosition
         try await Task.sleep(for: .milliseconds(1500))
@@ -154,6 +155,8 @@ import XCTest
         XCTAssertNotEqual(first.id, second.id)
         XCTAssertEqual(first.stories.first?.title, "Ocean science")
         let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") }); audio.start(first)
+        XCTAssertTrue(audio.isTransitioning)
+        try await Task.sleep(for: .milliseconds(1100))
         XCTAssertTrue(audio.isPlaying); XCTAssertEqual(audio.briefing?.id, first.id)
         audio.pause()
     }
@@ -184,7 +187,7 @@ import XCTest
         let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
         audio.start(try await backend.dailyBriefing(interests: [])); audio.seek(4); audio.beginQuestion()
         let answer = try await backend.research(QuestionRequest(requestID: UUID(), question: "Why?", storyID: audio.story?.id, previousTurns: []))
-        audio.playAnswer(answer); audio.finishCurrentSegment()
+        audio.playAnswer(answer); audio.pause(); audio.finishCurrentSegment()
         XCTAssertTrue(audio.isTransitioning)
         audio.pause()
         try await Task.sleep(for: .milliseconds(1500))
@@ -207,6 +210,35 @@ import XCTest
         XCTAssertFalse(restored.isPlaying)
         restored.restoreStory(resume: false)
         XCTAssertEqual(restored.position, 9, accuracy: 0.1)
+    }
+
+    func testCueWaveFilesDecodeAndHaveShortDurations() throws {
+        let story = try AVAudioPlayer(data: ListeningCue.story.waveData)
+        let answer = try AVAudioPlayer(data: ListeningCue.answer.waveData)
+        XCTAssertEqual(story.duration, 0.65, accuracy: 0.01)
+        XCTAssertEqual(answer.duration, 0.38, accuracy: 0.01)
+    }
+    func testPausingCueCancelsDelayedSpeechAndResumeSkipsCue() async throws {
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
+        audio.start(try await backend.dailyBriefing(interests: []))
+        XCTAssertTrue(audio.isTransitioning); XCTAssertFalse(audio.isPlaying)
+        audio.pause()
+        try await Task.sleep(for: .milliseconds(1100))
+        XCTAssertFalse(audio.isTransitioning); XCTAssertFalse(audio.isPlaying)
+        audio.play()
+        XCTAssertFalse(audio.isTransitioning); XCTAssertTrue(audio.isPlaying)
+        audio.pause()
+    }
+    func testAutomaticStoryChangeBreathesAndClearCancelsIt() async throws {
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
+        audio.start(try await backend.dailyBriefing(interests: [])); audio.pause()
+        audio.finishCurrentSegment()
+        XCTAssertEqual(audio.index, 0); XCTAssertTrue(audio.isTransitioning)
+        try await Task.sleep(for: .milliseconds(1150))
+        XCTAssertEqual(audio.index, 1); XCTAssertTrue(audio.isTransitioning); XCTAssertFalse(audio.isPlaying)
+        audio.clear()
+        try await Task.sleep(for: .milliseconds(1100))
+        XCTAssertNil(audio.briefing); XCTAssertFalse(audio.isPlaying); XCTAssertFalse(audio.isTransitioning)
     }
 
 }

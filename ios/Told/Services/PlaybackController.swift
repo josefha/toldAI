@@ -17,6 +17,8 @@ import Observation
     private var selectedSegmentID: String?
     var error: String?
     var speed: Float = 1 { didSet { player?.rate = speed; persist() } }
+    var transitionSoundsEnabled = true { didSet { store.save(transitionSoundsEnabled, key: "transitionSounds"); if !transitionSoundsEnabled { cuePlayer?.stop() } } }
+    private var cuePlayer: AVAudioPlayer?
     private var player: AVAudioPlayer?
     private let audioResolver: (String) -> URL?
     private var ticker: Timer?
@@ -68,7 +70,7 @@ import Observation
             remaining -= segment.duration
         }
     }
-    private func activate(_ segment: ListeningSegment, offset: Double = 0, resume: Bool) {
+    private func activate(_ segment: ListeningSegment, offset: Double = 0, resume: Bool, cue: ListeningCue? = nil) {
         guard let briefing else { return }
         cancelTransition()
         index = segment.storyIndex; selectedSegmentID = segment.id
@@ -76,15 +78,17 @@ import Observation
         checkpointPosition = segment.answer.flatMap { answer in deepDives.first { $0.id == answer.id }?.storyPosition }
         loadAudio(segment.answer?.audioResource ?? briefing.stories[index].audioResource)
         seek(segment.start + min(offset, segment.duration))
-        if resume && offset < segment.duration - 0.01 { play() }
+        if resume && offset < segment.duration - 0.01 { if let cue { playWithCue(cue) } else { play() } }
     }
     private func cancelTransition() {
+        cuePlayer?.stop(); cuePlayer = nil
         transitionTask?.cancel(); transitionTask = nil; transitionID = UUID(); isTransitioning = false
     }
     init(store: LocalStore, audioResolver: ((String) -> URL?)? = nil) {
         self.audioResolver = audioResolver ?? { AudioCache.url($0) }
         self.store = store
         super.init()
+        transitionSoundsEnabled = store.load("transitionSounds") ?? true
         if let saved: PlaybackCheckpoint = store.load("playback"), saved.briefing.stories.indices.contains(saved.index) {
             briefing = saved.briefing; index = saved.index; speed = saved.speed
             deepDives = saved.deepDives ?? []
@@ -113,7 +117,7 @@ import Observation
         if note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue { pause() }
     }
     private func loadAudio(_ resource: String) {
-        player?.stop(); isPlaying = false; error = nil
+        player?.stop(); player = nil; isPlaying = false; error = nil
         guard let url = audioResolver(resource) else { error = "This audio isn’t downloaded. Try another story."; player = nil; return }
         do {
             let audio = try AVAudioPlayer(contentsOf: url)
@@ -123,13 +127,36 @@ import Observation
     }
     func start(_ briefing: Briefing, at index: Int = 0) {
         guard briefing.stories.indices.contains(index) else { return }
-        if self.briefing?.id == briefing.id, self.story?.id == briefing.stories[index].id, !isAnswer { play(); return }
+        if self.briefing?.id == briefing.id, self.story?.id == briefing.stories[index].id, !isAnswer { if !isTransitioning { play() }; return }
         cancelTransition(); selectedSegmentID = nil
         deepDives = []; activeAnswer = nil
         self.briefing = briefing; self.index = index; checkpointPosition = nil; isAnswer = false
-        loadAudio(briefing.stories[index].audioResource); play(); persist()
+        loadAudio(briefing.stories[index].audioResource); playWithCue(.story); persist()
+    }
+    private func playWithCue(_ cue: ListeningCue) {
+        cancelTransition()
+        guard player != nil else { return }
+        player?.pause(); isPlaying = false
+        isTransitioning = true
+        let token = UUID(); transitionID = token
+        var leadIn = 0.3
+        if transitionSoundsEnabled {
+            do {
+                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
+                try AVAudioSession.sharedInstance().setActive(true)
+                let sound = try AVAudioPlayer(data: cue.waveData)
+                sound.volume = 0.22; sound.prepareToPlay()
+                if sound.play() { cuePlayer = sound; leadIn += sound.duration }
+            } catch { /* An optional cue must never prevent narration. */ }
+        }
+        transitionTask = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(leadIn)) } catch { return }
+            guard let self, self.transitionID == token else { return }
+            self.play()
+        }
     }
     func play() {
+        cancelTransition()
         guard let player else { return }
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
@@ -151,7 +178,7 @@ import Observation
         cancelTransition(); selectedSegmentID = nil
         finishDive(interrupted: true)
         checkpointPosition = nil; isAnswer = false; activeAnswer = nil; index = target
-        loadAudio(briefing.stories[index].audioResource); play(); persist()
+        loadAudio(briefing.stories[index].audioResource); playWithCue(.story); persist()
     }
     func beginQuestion() {
         cancelTransition(); selectedSegmentID = nil
@@ -164,7 +191,7 @@ import Observation
         cancelTransition(); selectedSegmentID = nil
         activeAnswer = answer; isAnswer = true; loadAudio(answer.audioResource)
         deepDives[deepDives.count - 1].audioDuration = duration
-        play()
+        playWithCue(.answer)
     }
     func restoreStory(resume: Bool) {
         guard let story, let checkpointPosition else { return }
@@ -192,15 +219,17 @@ import Observation
         if isAnswer { finishDive(interrupted: deepDives.first { $0.id == activeAnswer?.id }?.interrupted ?? false) }
         guard timeline.indices.contains(current + 1) else { persist(); return }
         let next = timeline[current + 1]
-        if isAnswer && next.answer == nil {
+        let nextCue: ListeningCue? = next.answer != nil ? .answer : (next.storyIndex != index ? .story : nil)
+        if (isAnswer && next.answer == nil) || next.storyIndex != index {
             isTransitioning = true
             let token = UUID(); transitionID = token
+            let pauseMilliseconds = next.storyIndex != index ? 1000 : 1400
             transitionTask = Task { [weak self] in
-                do { try await Task.sleep(for: .milliseconds(1400)) } catch { return }
+                do { try await Task.sleep(for: .milliseconds(pauseMilliseconds)) } catch { return }
                 guard let self, self.transitionID == token else { return }
-                self.activate(next, resume: true)
+                self.activate(next, resume: true, cue: nextCue)
             }
-        } else { activate(next, resume: true) }
+        } else { activate(next, resume: true, cue: nextCue) }
     }
     func clear() { cancelTransition(); selectedSegmentID = nil; deepDives = []; activeAnswer = nil; player?.stop(); player = nil; briefing = nil; index = 0; position = 0; isPlaying = false; isAnswer = false; checkpointPosition = nil }
     private func persist() {
@@ -213,5 +242,39 @@ import Observation
             self.isPlaying = false
             if flag { self.finishCurrentSegment() } else { self.error = "Playback stopped. Try again." }
         }
+    }
+}
+
+
+/// Original, locally synthesized felt-bell cues: no network or licensed samples.
+enum ListeningCue {
+    case story, answer
+    var waveData: Data {
+        let rate = 44100
+        let length = self == .story ? 0.65 : 0.38
+        let count = Int(Double(rate) * length)
+        var pcm = Data(capacity: count * 2)
+        let notes: [(Double, Double)] = self == .story ? [(0, 523.25), (0.22, 659.25)] : [(0, 523.25)]
+        for i in 0..<count {
+            let time = Double(i) / Double(rate)
+            var sample = 0.0
+            for (onset, frequency) in notes {
+                let t = time - onset
+                guard t >= 0 else { continue }
+                let attack = min(1, t / 0.025)
+                let release = min(1, max(0, (length - time) / 0.1))
+                let envelope = attack * exp(-t * 8) * release
+                sample += 0.55 * envelope * (sin(2 * .pi * frequency * t) + 0.12 * sin(2 * .pi * frequency * 2 * t))
+            }
+            var value = Int16(max(-1, min(1, sample)) * 32760).littleEndian
+            withUnsafeBytes(of: &value) { pcm.append(contentsOf: $0) }
+        }
+        var data = Data()
+        func label(_ text: String) { data.append(contentsOf: text.utf8) }
+        func number<T: FixedWidthInteger>(_ value: T) { var value = value.littleEndian; withUnsafeBytes(of: &value) { data.append(contentsOf: $0) } }
+        label("RIFF"); number(UInt32(36 + pcm.count)); label("WAVEfmt ")
+        number(UInt32(16)); number(UInt16(1)); number(UInt16(1)); number(UInt32(rate))
+        number(UInt32(rate * 2)); number(UInt16(2)); number(UInt16(16)); label("data"); number(UInt32(pcm.count)); data.append(pcm)
+        return data
     }
 }

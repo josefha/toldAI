@@ -66,7 +66,9 @@ struct PlaybackSettingsView: View {
     @State private var saved = false
     var body: some View {
         Form {
-            Section("Listening") { Picker("Playback speed", selection: $profile.playbackSpeed) { ForEach([Float(0.75), 1, 1.25, 1.5, 2], id: \.self) { Text("\($0.formatted())×").tag($0) } } }
+            Section("Listening") {
+                Toggle("Transition sounds", isOn: Binding(get: { model.playback.transitionSoundsEnabled }, set: { model.playback.transitionSoundsEnabled = $0 }))
+                Picker("Playback speed", selection: $profile.playbackSpeed) { ForEach([Float(0.75), 1, 1.25, 1.5, 2], id: \.self) { Text("\($0.formatted())×").tag($0) } } }
             Section("Voice") {
                 Picker("Prepared briefings", selection: $profile.briefingVoiceModel) { ForEach(VoiceModel.allCases) { Text($0.title).tag($0) } }
                 Picker("Interactive answers", selection: $profile.answerVoiceModel) { ForEach(VoiceModel.allCases) { Text($0.title).tag($0) } }
