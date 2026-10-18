@@ -95,7 +95,9 @@ export class Worker {
           voice: profile.briefingVoiceModel,
           voiceID: this.config.ELEVENLABS_VOICE_ID,
           domains: this.config.NEWS_DOMAINS,
-          version: 1,
+          scriptModel:
+            this.config.OPENAI_SCRIPT_MODEL || this.config.OPENAI_MODEL,
+          version: 2,
         }),
       )
       .digest("hex");

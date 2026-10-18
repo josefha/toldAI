@@ -6,6 +6,7 @@ const schema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(16),
   OPENAI_API_KEY: z.string().min(10),
   OPENAI_MODEL: z.string().default("gpt-5-mini"),
+  OPENAI_SCRIPT_MODEL: z.string().min(1).optional(),
   OPENAI_TRANSCRIBE_MODEL: z.string().default("gpt-4o-mini-transcribe"),
   ELEVENLABS_API_KEY: z.string().min(10),
   ELEVENLABS_VOICE_ID: z.string().min(5),

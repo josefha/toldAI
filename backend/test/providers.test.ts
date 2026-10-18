@@ -40,7 +40,10 @@ test("citations reject malformed and non-web URLs and deduplicate", () => {
   });
   assert.equal(result.length, 2);
   assert.equal(new Set(result.map((source) => source.id)).size, 2);
-  assert.deepEqual(result.map((source) => source.id), ["1", "2"]);
+  assert.deepEqual(
+    result.map((source) => source.id),
+    ["1", "2"],
+  );
   assert.equal(result[0]?.name, "example.com");
 });
 test("research requires actual retrieved citations and rejects fabricated script links", async () => {
@@ -52,6 +55,7 @@ test("research requires actual retrieved citations and rejects fabricated script
       calls++;
       const body = JSON.parse(options.body);
       if (calls % 2 === 1) {
+        assert.equal(body.model, config.OPENAI_MODEL);
         assert.equal(body.tools[0].type, "web_search");
         assert.equal(body.tool_choice, "required");
         return Response.json({
@@ -75,8 +79,13 @@ test("research requires actual retrieved citations and rejects fabricated script
           ],
         });
       }
+      assert.equal(body.model, "gpt-5.4-mini");
+      assert.match(body.instructions, /single-host English news podcast/);
       assert.equal(body.text.format.strict, true);
-      assert.deepEqual(body.text.format.schema.properties.sourceURLs.items.enum, ["https://example.com/report"]);
+      assert.deepEqual(
+        body.text.format.schema.properties.sourceURLs.items.enum,
+        ["https://example.com/report"],
+      );
       return Response.json({
         status: "completed",
         output: [
@@ -104,7 +113,10 @@ test("research requires actual retrieved citations and rejects fabricated script
     },
   );
   try {
-    const provider = new Providers(config);
+    const provider = new Providers({
+      ...config,
+      OPENAI_SCRIPT_MODEL: "gpt-5.4-mini",
+    });
     await assert.rejects(
       provider.research("What happened?", "", new AbortController().signal),
       /Source verification failed/,
@@ -124,21 +136,34 @@ test("missing configuration fails closed without printing values", () => {
 });
 
 test("transcription uses the language field supported by each model", async () => {
-  const stub = mock.method(globalThis, "fetch", async (_url: any, options: any) => {
-    const form = options.body as FormData;
-    if (form.get("model") === "gpt-transcribe") {
-      assert.deepEqual(form.getAll("languages[]"), ["en"]);
-      assert.equal(form.has("language"), false);
-    } else {
-      assert.equal(form.get("language"), "en");
-      assert.equal(form.has("languages[]"), false);
-    }
-    return Response.json({ text: "Explain this story." });
-  });
+  const stub = mock.method(
+    globalThis,
+    "fetch",
+    async (_url: any, options: any) => {
+      const form = options.body as FormData;
+      if (form.get("model") === "gpt-transcribe") {
+        assert.deepEqual(form.getAll("languages[]"), ["en"]);
+        assert.equal(form.has("language"), false);
+      } else {
+        assert.equal(form.get("language"), "en");
+        assert.equal(form.has("languages[]"), false);
+      }
+      return Response.json({ text: "Explain this story." });
+    },
+  );
   try {
     for (const model of ["gpt-transcribe", "gpt-4o-mini-transcribe"]) {
-      const provider = new Providers({ ...config, OPENAI_TRANSCRIBE_MODEL: model });
-      assert.equal(await provider.transcribe(Buffer.from("test"), new AbortController().signal), "Explain this story.");
+      const provider = new Providers({
+        ...config,
+        OPENAI_TRANSCRIBE_MODEL: model,
+      });
+      assert.equal(
+        await provider.transcribe(
+          Buffer.from("test"),
+          new AbortController().signal,
+        ),
+        "Explain this story.",
+      );
     }
   } finally {
     stub.mock.restore();
