@@ -246,7 +246,7 @@ import Observation
 }
 
 
-/// Original, locally synthesized rounded marimba cues: no network or licensed samples.
+/// Original, locally synthesized soft air-sweep cues: no network or licensed samples.
 enum ListeningCue {
     case story, answer
     var waveData: Data {
@@ -254,22 +254,23 @@ enum ListeningCue {
         let length = self == .story ? 0.65 : 0.38
         let count = Int(Double(rate) * length)
         var pcm = Data(capacity: count * 2)
-        let notes: [(Double, Double)] = self == .story ? [(0, 523.25), (0.105, 659.25), (0.22, 783.99)] : [(0, 659.25)]
+        // Deterministic filtered noise: an airy sweep without a pitched notification tone.
+        var seed: UInt64 = 0x746F6C64
+        var low = 0.0
+        var body = 0.0
         for i in 0..<count {
             let time = Double(i) / Double(rate)
-            var sample = 0.0
-            for (onset, frequency) in notes {
-                let t = time - onset
-                guard t >= 0 else { continue }
-                let attack = 1 - exp(-t / 0.008)
-                let release = min(1, max(0, (length - time) / 0.12))
-                // A tiny falling pitch transient gives each note a rounded, tactile pop.
-                let phase = 2 * Double.pi * frequency * (t + 0.018 * 0.018 * (1 - exp(-t / 0.018)))
-                let body = sin(phase) * exp(-t * 8)
-                let wood = 0.22 * sin(phase * 2) * exp(-t * 22)
-                let warmth = 0.12 * sin(phase * 0.5) * exp(-t * 11)
-                sample += 0.48 * attack * release * (body + wood + warmth)
-            }
+            let progress = time / length
+            seed = seed &* 6364136223846793005 &+ 1
+            let noise = Double(seed >> 32) / Double(UInt32.max) * 2 - 1
+            // Gently opens then closes the filter, keeping the high end soft.
+            let arc = pow(sin(Double.pi * progress), 2)
+            let cutoff = 650 + 1400 * arc
+            let coefficient = 1 - exp(-2 * Double.pi * cutoff / Double(rate))
+            low += coefficient * (noise - low)
+            body += 0.025 * (low - body)
+            let envelope = pow(sin(Double.pi * progress), 1.8)
+            let sample = 0.85 * envelope * (low - 0.65 * body)
             var value = Int16(max(-1, min(1, sample)) * 32760).littleEndian
             withUnsafeBytes(of: &value) { pcm.append(contentsOf: $0) }
         }
