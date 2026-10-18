@@ -1,6 +1,6 @@
 # Huxe UI reverse-engineering reference pack
 
-Research date: 2026-10-17. Purpose: identify documented Huxe screens and adapt its information architecture for an original conversational-news MVP. Huxe discontinued service in May 2026. Screenshots span multiple versions (2025-2026) and **must not be treated as one cohesive release**.
+Research date: 2026-10-17. Product scope updated 2026-10-18; see [backend architecture](BACKEND_ARCHITECTURE.md) for current decisions. Purpose: identify documented Huxe screens and adapt its information architecture for an original conversational-news MVP. Huxe discontinued service in May 2026. Screenshots span multiple versions (2025-2026) and **must not be treated as one cohesive release**.
 
 ## Primary screenshot archives
 
@@ -42,7 +42,7 @@ Confidence H = visible screenshot; M = detailed written hands-on description or 
 |---|---|---|---|
 | Sign-in | Google/Apple login onboarding screenshot | H | Optional sign-in only after demo |
 | Interest selection | Editable interest tags screenshot | H | Choose topics AND disliked topics |
-| Connected personal data | Connect mail/calendar setup screenshot | H | Defer for news-only MVP |
+| Connected personal data | Connect mail/calendar setup screenshot | H | Excluded from toldAI scope |
 | Home / personalized daily briefing | For You, date-based greeting, Play button | H | One obvious "Play today's brief" CTA |
 | Discover stations | Search, Tech/Sports/Science topics, cards | H | Source-based channels and topic feeds |
 | Daily brief with live cards | Visual news cards and player controls | H | One story at a time with source citations |
@@ -53,7 +53,7 @@ Confidence H = visible screenshot; M = detailed written hands-on description or 
 | Custom show details | Episodes, Edit, Generate Now screenshot | H | My briefings with Last updated marker |
 | RSS/web/X/Reddit inputs | Hands-on UI partial and Fast Company instructions | M | Start with RSS and source websites |
 | Live station updating | TechCrunch hands-on | M | Refresh on demand + scheduled daily |
-| Settings and voice selection | WIRED walkthrough + App Store changes | M | One voice, language, playback speed |
+| Settings and voice selection | WIRED walkthrough + App Store changes | M | One voice, English in v1, playback speed |
 | Continuous playback & CarPlay | Official version-history release notes | M | Defer until users establish habit |
 | Reliable item-level citations | No complete UI proof located | L | Essential original improvement |
 | Long-term personal context | General personalization described, details unknown | L | Add only after repeated use validated |
@@ -62,7 +62,7 @@ Confidence H = visible screenshot; M = detailed written hands-on description or 
 
 ```text
 Onboarding
-  Welcome -> Pick topics -> Pick sources -> Ready
+  Welcome -> Pick topics -> Save profile (English, optional location) -> Ready
 
 Home
   Today's briefing -> Audio player
@@ -88,13 +88,15 @@ Library / Preferences
 
 ## MVP build priority
 
-**P0 - clickable visual prototype, no live models:** Welcome, Interests, Sources, Home, Player (idle/playing/listening/speaking), Explore, Source detail. Dummy 8-story briefing and realistic state transitions.
+**P0 - clickable visual prototype, no live models:** Welcome, Interests, Sources, Home, Player (idle/playing/listening/speaking), Explore, Source detail. Dummy 5-story briefing and realistic state transitions.
 
 **P1 - functional core:** Daily story ingestion, deduplication, source metadata, audio playback, skip, one spoken follow-up and return to sequence, feedback events.
 
 **P2 - habit and differentiation:** Saved interests/sources, cross-day memory for stories already heard, updates since prior discussion, reading view, bookmarks, one-click source retrieval.
 
-**Not yet:** Email/calendar permissions, public social-show sharing, remixes, community follows, dozens of host voices, podcast generation for arbitrary topics, CarPlay.
+**Excluded:** Email/calendar connections and weather integrations.
+
+**Not yet:** Public social-show sharing, remixes, community follows, dozens of host voices, podcast generation for arbitrary topics, CarPlay.
 
 ## Key technical/UI behavior to simulate before building back end
 

@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1440" viewBox="0 0 1440 1440"><defs><linearGradient id="hero" x2="0.8" y2="1"><stop stop-color="#B26B45"/><stop offset=".38" stop-color="#663447"/><stop offset="1" stop-color="#17121F"/></linearGradient><linearGradient id="art" x2="1" y2="1"><stop stop-color="#C99F78"/><stop offset=".45" stop-color="#5E425D"/><stop offset="1" stop-color="#252B49"/></linearGradient></defs>
+<rect x="0" y="0" width="1440" height="1440" rx="0" fill="#141419" />
+<text x="52" y="65" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="30" font-weight="600">toldAI</text>
+<text x="52" y="101" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="500">BRAND &amp; INTERACTION DIRECTION  /  0.1</text>
+<text x="410" y="77" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="35" font-weight="500">A familiar feeling. A considered system.</text>
+<text x="410" y="112" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="17" font-weight="400">Huxe-inspired atmosphere, shaped around five stories and a conversation.</text>
+<rect x="52" y="151" width="1336" height="1" rx="0" fill="#45404D" />
+<text x="52" y="209" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="24" font-weight="500">The story stays with you.</text>
+<text x="52" y="246" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="16" font-weight="400">Calm, curious, grounded.</text>
+<text x="52" y="273" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="16" font-weight="400">Rich color belongs to the story.</text>
+<text x="52" y="300" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="16" font-weight="400">Controls stay quiet and clear.</text>
+<text x="52" y="369" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="600">COLOR SYSTEM</text>
+<rect x="52" y="392" width="30" height="30" rx="8" fill="#101015" stroke="#68616F"/>
+<rect x="88" y="392" width="30" height="30" rx="8" fill="#F7F5F2" />
+<text x="132" y="405" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">canvas</text>
+<text x="132" y="422" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="11" font-weight="400">#101015 / #F7F5F2</text>
+<rect x="52" y="441" width="30" height="30" rx="8" fill="#202027" stroke="#68616F"/>
+<rect x="88" y="441" width="30" height="30" rx="8" fill="#FFFFFF" />
+<text x="132" y="454" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">surface</text>
+<text x="132" y="471" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="11" font-weight="400">#202027 / #FFFFFF</text>
+<rect x="52" y="490" width="30" height="30" rx="8" fill="#F8F6F2" stroke="#68616F"/>
+<rect x="88" y="490" width="30" height="30" rx="8" fill="#202027" />
+<text x="132" y="503" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">text</text>
+<text x="132" y="520" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="11" font-weight="400">#F8F6F2 / #202027</text>
+<rect x="52" y="539" width="30" height="30" rx="8" fill="#B7B3BF" stroke="#68616F"/>
+<rect x="88" y="539" width="30" height="30" rx="8" fill="#625C69" />
+<text x="132" y="552" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">secondary</text>
+<text x="132" y="569" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="11" font-weight="400">#B7B3BF / #625C69</text>
+<rect x="52" y="588" width="30" height="30" rx="8" fill="#F4BE83" stroke="#68616F"/>
+<rect x="88" y="588" width="30" height="30" rx="8" fill="#713E18" />
+<text x="132" y="601" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">accent</text>
+<text x="132" y="618" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="11" font-weight="400">#F4BE83 / #713E18</text>
+<rect x="52" y="637" width="30" height="30" rx="8" fill="#FFADA8" stroke="#68616F"/>
+<rect x="88" y="637" width="30" height="30" rx="8" fill="#A02432" />
+<text x="132" y="650" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">critical</text>
+<text x="132" y="667" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="11" font-weight="400">#FFADA8 / #A02432</text>
+<text x="52" y="734" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="600">TYPE</text>
+<text x="52" y="775" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="29" font-weight="600">Bold stories.</text>
+<text x="52" y="807" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="16" font-weight="400">Comfortable reading. 17 pt</text>
+<text x="52" y="836" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">SF system family · Dynamic Type</text>
+<text x="410" y="226" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="15" font-weight="500">01 / HOME</text>
+<g transform="translate(410,250)">
+<rect x="0" y="0" width="300" height="650" rx="32" fill="#101015" stroke="#45404D" stroke-width="1"/>
+<rect x="1" y="1" width="298" height="300" rx="31" fill="url(#hero)" />
+<rect x="1" y="118" width="298" height="183" rx="0" fill="#101015" opacity=".25"/>
+<text x="22" y="29" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">9:41</text>
+<text x="23" y="69" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="23" font-weight="600">told</text>
+<text x="253" y="67" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="20" font-weight="400">☰</text>
+<text x="24" y="113" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="10" font-weight="600">YOUR DAILY BRIEF</text>
+<text x="24" y="153" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="31" font-weight="600">A little closer</text>
+<text x="24" y="190" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="31" font-weight="600">to the story.</text>
+<text x="24" y="220" fill="#E9DBDF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">Five stories. Room for questions.</text>
+<rect x="24" y="244" width="155" height="38" rx="19" fill="#F4BE83" />
+<path d="M41 255 l0 16 l13 -8 z" fill="#202027"/>
+<text x="63" y="268" fill="#202027" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="600">Play your brief</text>
+<text x="22" y="330" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="21" font-weight="600">Today’s five</text>
+<text x="222" y="330" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">5 min</text>
+<rect x="20" y="349" width="260" height="54" rx="14" fill="#202027" />
+<rect x="28" y="356" width="40" height="40" rx="10" fill="url(#art)" />
+<text x="36" y="382" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">01</text>
+<text x="80" y="372" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="500">The next chapter</text>
+<text x="80" y="390" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">in personal computing</text>
+<rect x="20" y="411" width="260" height="54" rx="14" fill="#202027" />
+<rect x="28" y="418" width="40" height="40" rx="10" fill="url(#art)" />
+<text x="36" y="444" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">02</text>
+<text x="80" y="434" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="500">What a smaller chip</text>
+<text x="80" y="452" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">could change</text>
+<rect x="20" y="473" width="260" height="54" rx="14" fill="#202027" />
+<rect x="28" y="480" width="40" height="40" rx="10" fill="url(#art)" />
+<text x="36" y="506" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">03</text>
+<text x="80" y="496" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="500">A new way to store</text>
+<text x="80" y="514" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">clean energy</text>
+<text x="22" y="553" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="10" font-weight="400">Illustrative stories · Demo content</text>
+<rect x="18" y="574" width="264" height="55" rx="27" fill="#202027" stroke="#817886" stroke-opacity=".3"/>
+<text x="45" y="606" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="600">Home</text>
+<text x="127" y="606" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">Search</text>
+<text x="214" y="606" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">You</text>
+<rect x="106" y="638" width="88" height="4" rx="2" fill="#F8F6F2" />
+</g>
+<text x="750" y="226" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="15" font-weight="500">02 / PLAYER</text>
+<g transform="translate(750,250)">
+<rect x="0" y="0" width="300" height="650" rx="32" fill="#101015" stroke="#45404D" stroke-width="1"/>
+<rect x="1" y="1" width="298" height="300" rx="31" fill="url(#hero)" />
+<rect x="1" y="90" width="298" height="211" rx="0" fill="#101015" opacity=".35"/>
+<text x="22" y="29" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">9:41</text>
+<text x="23" y="65" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="25" font-weight="400">⌄</text>
+<text x="108" y="64" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="10" font-weight="400">DAILY BRIEF</text>
+<text x="260" y="64" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="20" font-weight="400">···</text>
+<text x="24" y="108" fill="#F4BE83" font-family="Helvetica Neue,Arial,sans-serif" font-size="10" font-weight="600">STORY 01 OF 05</text>
+<rect x="24" y="125" width="43" height="3" rx="1" fill="#F4BE83" />
+<rect x="75" y="125" width="43" height="3" rx="1" fill="#716373" />
+<rect x="126" y="125" width="43" height="3" rx="1" fill="#716373" />
+<rect x="177" y="125" width="43" height="3" rx="1" fill="#716373" />
+<rect x="228" y="125" width="43" height="3" rx="1" fill="#716373" />
+<text x="24" y="178" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="27" font-weight="600">The next chapter</text>
+<text x="24" y="214" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="27" font-weight="600">in personal</text>
+<text x="24" y="250" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="27" font-weight="600">computing</text>
+<rect x="20" y="281" width="260" height="177" rx="24" fill="#202027" />
+<text x="38" y="312" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="10" font-weight="600">THE SHORT VERSION</text>
+<text x="38" y="342" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="15" font-weight="400">A new generation of devices</text>
+<text x="38" y="364" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="15" font-weight="400">is moving more intelligence</text>
+<text x="38" y="386" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="15" font-weight="400">closer to the person using it.</text>
+<text x="38" y="426" fill="#F4BE83" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="600">View sources  ↗</text>
+<text x="26" y="483" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="600">Story</text>
+<text x="83" y="483" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">Transcript</text>
+<text x="238" y="483" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">1×</text>
+<rect x="24" y="504" width="252" height="3" rx="1" fill="#45404D" />
+<rect x="24" y="504" width="85" height="3" rx="1" fill="#F4BE83" />
+<text x="24" y="526" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="10" font-weight="400">0:24</text>
+<text x="252" y="526" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="10" font-weight="400">1:05</text>
+<rect x="22" y="551" width="197" height="54" rx="27" fill="#F4BE83" />
+<text x="65" y="584" fill="#202027" font-family="Helvetica Neue,Arial,sans-serif" font-size="15" font-weight="600">Ask a question</text>
+<rect x="231" y="551" width="48" height="54" rx="24" fill="#202027" />
+<text x="247" y="585" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="21" font-weight="400">Ⅱ</text>
+<text x="54" y="630" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="11" font-weight="400">Pause. Ask. Follow the story.</text>
+<rect x="106" y="638" width="88" height="4" rx="2" fill="#F8F6F2" />
+</g>
+<text x="1090" y="226" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="15" font-weight="500">03 / LIGHT APPEARANCE</text>
+<g transform="translate(1090,250)">
+<rect x="0" y="0" width="300" height="650" rx="32" fill="#F7F5F2" stroke="#45404D" stroke-width="1"/>
+<rect x="1" y="1" width="298" height="300" rx="31" fill="url(#hero)" />
+<rect x="1" y="118" width="298" height="183" rx="0" fill="#101015" opacity=".25"/>
+<text x="22" y="29" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">9:41</text>
+<text x="23" y="69" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="23" font-weight="600">told</text>
+<text x="253" y="67" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="20" font-weight="400">☰</text>
+<text x="24" y="113" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="10" font-weight="600">YOUR DAILY BRIEF</text>
+<text x="24" y="153" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="31" font-weight="600">A little closer</text>
+<text x="24" y="190" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="31" font-weight="600">to the story.</text>
+<text x="24" y="220" fill="#E9DBDF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">Five stories. Room for questions.</text>
+<rect x="24" y="244" width="155" height="38" rx="19" fill="#F4BE83" />
+<path d="M41 255 l0 16 l13 -8 z" fill="#202027"/>
+<text x="63" y="268" fill="#202027" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="600">Play your brief</text>
+<text x="22" y="330" fill="#202027" font-family="Helvetica Neue,Arial,sans-serif" font-size="21" font-weight="600">Today’s five</text>
+<text x="222" y="330" fill="#625C69" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">5 min</text>
+<rect x="20" y="349" width="260" height="54" rx="14" fill="#FFF" />
+<rect x="28" y="356" width="40" height="40" rx="10" fill="url(#art)" />
+<text x="36" y="382" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">01</text>
+<text x="80" y="372" fill="#202027" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="500">The next chapter</text>
+<text x="80" y="390" fill="#625C69" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">in personal computing</text>
+<rect x="20" y="411" width="260" height="54" rx="14" fill="#FFF" />
+<rect x="28" y="418" width="40" height="40" rx="10" fill="url(#art)" />
+<text x="36" y="444" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">02</text>
+<text x="80" y="434" fill="#202027" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="500">What a smaller chip</text>
+<text x="80" y="452" fill="#625C69" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">could change</text>
+<rect x="20" y="473" width="260" height="54" rx="14" fill="#FFF" />
+<rect x="28" y="480" width="40" height="40" rx="10" fill="url(#art)" />
+<text x="36" y="506" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">03</text>
+<text x="80" y="496" fill="#202027" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="500">A new way to store</text>
+<text x="80" y="514" fill="#625C69" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">clean energy</text>
+<text x="22" y="553" fill="#625C69" font-family="Helvetica Neue,Arial,sans-serif" font-size="10" font-weight="400">Illustrative stories · Demo content</text>
+<rect x="18" y="574" width="264" height="55" rx="27" fill="#FFF" stroke="#817886" stroke-opacity=".3"/>
+<text x="45" y="606" fill="#202027" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="600">Home</text>
+<text x="127" y="606" fill="#625C69" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">Search</text>
+<text x="214" y="606" fill="#625C69" font-family="Helvetica Neue,Arial,sans-serif" font-size="13" font-weight="400">You</text>
+<rect x="106" y="638" width="88" height="4" rx="2" fill="#202027" />
+</g>
+<rect x="52" y="941" width="1336" height="1" rx="0" fill="#45404D" />
+<text x="52" y="979" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="11" font-weight="600">SIGNATURE</text>
+<text x="52" y="1010" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="17" font-weight="400">Five segments track your place.</text>
+<text x="520" y="979" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="11" font-weight="600">MOTION</text>
+<text x="520" y="1010" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="17" font-weight="400">The mini player becomes the story.</text>
+<text x="1010" y="979" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="11" font-weight="600">BEFORE COMPONENTS</text>
+<text x="1010" y="1010" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="17" font-weight="400">Prove the gestures on a device.</text>
+<text x="52" y="1066" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="400">Proposed direction, not an implemented UI. Typography and materials require native verification.</text>
+<text x="52" y="1180" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="12" font-weight="600">INTERACTION BEFORE ABSTRACTION</text>
+<text x="52" y="1224" fill="#F8F6F2" font-family="Helvetica Neue,Arial,sans-serif" font-size="30" font-weight="500">Home → Player → Ask → Answer → Continue</text>
+<text x="52" y="1270" fill="#B7B3BF" font-family="Helvetica Neue,Arial,sans-serif" font-size="19" font-weight="400">One native flow first. Then build the components that make it work.</text>
+</svg>
