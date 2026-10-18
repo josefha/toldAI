@@ -38,6 +38,7 @@ Reference: [Vite on Vercel](https://vercel.com/docs/frameworks/frontend/vite), [
 - Hero with original illustrated daily-five card.
 - Personal podcast section with three selectable example topics.
 - Listening section with an interactive, visual deep-dive timeline. This is a product illustration, with no microphone access or generated audio.
+- Light/dark toggle, initialized from system appearance and saved locally; linked creator credit to @josefkarakoca on X.
 - Closing App Store placeholder; no departure/shutdown message, signup form, or analytics.
 - Local DM Sans fonts with included license, optimized local artwork, keyboard focus states, skip link, and reduced-motion support.
 
