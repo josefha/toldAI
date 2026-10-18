@@ -29,7 +29,9 @@ async function generate(input: object) {
   for (let i = 0; i < 450; i++) {
     const job = await api(`jobs/${id}`);
     if (job.status === "completed") {
-      console.log(`Generation completed in ${((Date.now() - started) / 1000).toFixed(1)} seconds.`);
+      console.log(
+        `Generation completed in ${((Date.now() - started) / 1000).toFixed(1)} seconds.`,
+      );
       return job.result;
     }
     if (["failed", "cancelled"].includes(job.status))
@@ -47,13 +49,20 @@ async function audio(url: string) {
     bytes.byteLength < 100
   )
     throw new Error("Audio download failed.");
-  const metadata = await parseBuffer(bytes, { mimeType: "audio/mpeg" }, { duration: true });
+  const metadata = await parseBuffer(
+    bytes,
+    { mimeType: "audio/mpeg" },
+    { duration: true },
+  );
   if (!(metadata.format.duration && metadata.format.duration > 0))
     throw new Error("Audio has no playable duration.");
 }
 function sources(items: any[]) {
-  if (!items?.length || new Set(items.map((item) => item.id)).size !== items.length)
-    throw new Error("Sources are missing or have duplicate IDs.");
+  if (
+    !Array.isArray(items) ||
+    new Set(items.map((item) => item.id)).size !== items.length
+  )
+    throw new Error("Sources are invalid or have duplicate IDs.");
 }
 const profile = await api("me");
 if (!profile.completedOnboarding)
@@ -91,13 +100,14 @@ const answer = await generate({
   storyID: episode.stories[0].id,
   previousAnswerIDs: [],
 });
-if (!answer.sources?.length) throw new Error("Answer has no sources.");
+// Direct explanations and general answers may legitimately have no external sources.
 sources(answer.sources);
 await audio(answer.audioResource);
 console.log("Follow-up and audio passed.");
 const nextAnswer = await generate({
   kind: "question",
-  question: "Based on your previous answer, explain the biggest uncertainty in simpler terms and give one concrete example.",
+  question:
+    "Based on your previous answer, explain the biggest uncertainty in simpler terms and give one concrete example.",
   storyID: episode.stories[0].id,
   previousAnswerIDs: [answer.id],
 });

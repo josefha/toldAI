@@ -66,6 +66,9 @@ struct SourceList: View {
     let sources: [NewsSource]
     var body: some View {
         List {
+            if sources.isEmpty {
+                Text("No source links are available for this answer.").foregroundStyle(.secondary)
+            }
             ForEach(sources) { source in
                 VStack(alignment: .leading, spacing: 10) {
                     Text(source.name).font(.headline)

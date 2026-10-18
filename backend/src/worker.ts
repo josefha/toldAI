@@ -1,3 +1,4 @@
+import { measured, timing, withTiming } from "./timing.js";
 import { createHash, randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import type { Config } from "./config.js";
@@ -59,7 +60,11 @@ export class Worker {
     signal.throwIfAborted();
     const speech = await this.providers.speech(script.script, model, signal);
     signal.throwIfAborted();
-    const audioResource = await this.store.upload(`${id}.mp3`, speech.audio);
+    const audioResource = await measured(
+      "storage_upload",
+      () => this.store.upload(`${id}.mp3`, speech.audio),
+      { bytes: speech.audio.length },
+    );
     return {
       id,
       title: script.title,
@@ -102,34 +107,43 @@ export class Worker {
         .eq("key", key)
         .maybeSingle();
       check(error);
-      if (data?.data && Date.parse(data.expires_at) > Date.now())
+      if (data?.data && Date.parse(data.expires_at) > Date.now()) {
+        timing("daily_cache", { hit: true });
         return data.data;
+      }
       const { data: claimed, error: claimError } = await this.store.db.rpc(
         "claim_cache",
         { cache_key: key, worker: this.id },
       );
       check(claimError);
-      if (claimed) break;
+      if (claimed) {
+        timing("daily_cache", { hit: false });
+        break;
+      }
       await delay(2000, undefined, { signal });
     }
     try {
       const stories: Story[] = [];
       for (let i = 0; i < 5; i++) {
         const category = profile.interests[i % profile.interests.length]!;
-        const script = await this.providers.research(
-          `Choose one important, distinct news development from the last 24 hours about ${category}. If coverage is thin, extend to the last 72 hours and say the date. Do not repeat these already selected topics: ${stories.map((s) => s.title).join("; ")}.`,
-          "",
-          signal,
+        const story = await withTiming({ storyIndex: i + 1 }, () =>
+          measured("daily_story", async () => {
+            const script = await this.providers.research(
+              `Choose one important, distinct news development from the last 24 hours about ${category}. If coverage is thin, extend to the last 72 hours and say the date. Do not repeat these already selected topics: ${stories.map((s) => s.title).join("; ")}.`,
+              "",
+              signal,
+            );
+            return this.render(
+              script,
+              randomUUID(),
+              profile.briefingVoiceModel,
+              signal,
+            );
+          }),
         );
-        stories.push(
-          await this.render(
-            script,
-            randomUUID(),
-            profile.briefingVoiceModel,
-            signal,
-          ),
-        );
+        stories.push(story);
       }
+      timing("daily_stories", { count: stories.length, status: "completed" });
       const result: Briefing = {
         id: randomUUID(),
         title: "Your daily five",
@@ -158,6 +172,26 @@ export class Worker {
     }
   }
   async process(job: Job) {
+    return withTiming(
+      { jobID: job.id, kind: job.kind, attempt: job.attempts },
+      async () => {
+        const start = performance.now();
+        timing("job", {
+          status: "started",
+          queueWaitMs: Math.max(
+            0,
+            Date.now() -
+              Date.parse((job as Job & { created_at: string }).created_at),
+          ),
+        });
+        await this.processJob(job);
+        timing("worker_elapsed", {
+          durationMs: Math.round(performance.now() - start),
+        });
+      },
+    );
+  }
+  private async processJob(job: Job) {
     const controller = new AbortController();
     this.current = controller;
     const signal = AbortSignal.any([
@@ -180,16 +214,21 @@ export class Worker {
       })();
     }, 10_000);
     try {
-      const profile = await this.store.profile(job.user_id);
+      const profile = await measured("profile_load", () =>
+        this.store.profile(job.user_id),
+      );
       let result: Briefing | Answer;
       if (job.input.kind === "question") {
-        const story = await this.store.story(job.user_id, job.input.storyID);
+        const storyID = job.input.storyID;
+        const story = await measured("story_context", () =>
+          this.store.story(job.user_id, storyID),
+        );
         const history = await this.store.history(
           job.user_id,
           story.id,
           job.input.previousAnswerIDs,
         );
-        const script = await this.providers.research(
+        const script = await this.providers.answer(
           job.input.question,
           JSON.stringify({
             story: story.transcript,
@@ -197,6 +236,7 @@ export class Worker {
             previousTurns: history.map((a) => ({
               question: a.question,
               answer: a.text,
+              sources: a.sources,
             })),
           }),
           signal,
@@ -215,20 +255,18 @@ export class Worker {
           audioResource: rendered.audioResource,
         };
         signal.throwIfAborted();
-        const { error } = await this.store.db
-          .from("answers")
-          .upsert({
-            id: job.id,
-            user_id: job.user_id,
-            story_id: story.id,
-            data: result,
-          });
+        const { error } = await this.store.db.from("answers").upsert({
+          id: job.id,
+          user_id: job.user_id,
+          story_id: story.id,
+          data: result,
+        });
         check(error);
       } else {
         if (job.input.kind === "daily")
           result = await this.daily(profile, signal);
         else {
-          const script = await this.providers.research(
+          const script = await this.providers.answer(
             job.input.question,
             "",
             signal,
@@ -256,21 +294,27 @@ export class Worker {
         check(error);
       }
       signal.throwIfAborted();
-      const { data: completed, error } = await this.store.db
-        .from("jobs")
-        .update({
-          status: "completed",
-          result,
-          lease_until: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", job.id)
-        .eq("worker_id", this.id)
-        .eq("status", "running")
-        .select("id");
+      const { data: completed, error } = await measured(
+        "job_persist",
+        async () =>
+          await this.store.db
+            .from("jobs")
+            .update({
+              status: "completed",
+              result,
+              lease_until: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", job.id)
+            .eq("worker_id", this.id)
+            .eq("status", "running")
+            .select("id"),
+      );
       check(error);
       if (!completed?.length) throw new DOMException("Cancelled", "AbortError");
+      timing("job", { status: "completed" });
     } catch (error) {
+      timing("job", { status: signal.aborted ? "interrupted" : "failed" });
       const message =
         error instanceof PublicError
           ? error.message

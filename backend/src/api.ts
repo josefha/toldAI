@@ -1,3 +1,4 @@
+import { measured, timing, withTiming } from "./timing.js";
 import Fastify from "fastify";
 import { isDeepStrictEqual } from "node:util";
 import multipart from "@fastify/multipart";
@@ -32,14 +33,12 @@ export async function createAPI(
     if (error instanceof PublicError)
       return reply.code(error.status).send({ error: error.message });
     app.log.error({ code: error.code }, "Request failed");
-    return reply
-      .code(error.statusCode === 413 ? 413 : 500)
-      .send({
-        error:
-          error.statusCode === 413
-            ? "Recording is too large. Please ask a shorter question."
-            : "The request could not finish. Please try again.",
-      });
+    return reply.code(error.statusCode === 413 ? 413 : 500).send({
+      error:
+        error.statusCode === 413
+          ? "Recording is too large. Please ask a shorter question."
+          : "The request could not finish. Please try again.",
+    });
   });
   app.get("/health", () => ({ status: "ok" }));
   app.get("/ready", async () => {
@@ -112,17 +111,16 @@ export async function createAPI(
             ? config.QUESTION_JOB_LIMIT
             : config.DAILY_JOB_LIMIT,
         );
-        const { error } = await store.db
-          .from("jobs")
-          .insert({
-            id: input.requestID,
-            user_id: user.id,
-            kind: input.kind,
-            input,
-          });
+        const { error } = await store.db.from("jobs").insert({
+          id: input.requestID,
+          user_id: user.id,
+          kind: input.kind,
+          input,
+        });
         if (error?.code === "23505")
           throw new PublicError(409, "This request ID is already in use.");
         check(error);
+        timing("job_queued", { jobID: input.requestID, kind: input.kind });
         return reply.code(202).send({ id: input.requestID, status: "queued" });
       });
       routes.get("/jobs/:id", async (request) => {
@@ -136,7 +134,11 @@ export async function createAPI(
           error: job.error,
           result:
             job.status === "completed" && job.result
-              ? await store.hydrate(job.result)
+              ? await withTiming({ jobID: job.id }, () =>
+                  measured("signed_audio_urls", () =>
+                    store.hydrate(job.result!),
+                  ),
+                )
               : null,
         };
       });
@@ -168,7 +170,9 @@ export async function createAPI(
         if (file.file.truncated)
           throw new PublicError(413, "Please ask a shorter question.");
         return {
-          text: await providers.transcribe(buffer, AbortSignal.timeout(65_000)),
+          text: await withTiming({ requestID: request.id }, () =>
+            providers.transcribe(buffer, AbortSignal.timeout(65_000)),
+          ),
         };
       });
       routes.delete("/me", async (request, reply) => {

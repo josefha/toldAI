@@ -45,6 +45,9 @@ test(
           ],
         };
       }
+      override async answer() {
+        return this.research();
+      }
       override async speech() {
         return { audio: Buffer.from("test audio bytes"), duration: 12 };
       }

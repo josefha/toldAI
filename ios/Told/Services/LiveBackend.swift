@@ -1,5 +1,8 @@
 import Foundation
 import Security
+import OSLog
+
+private let timingLog = Logger(subsystem: "com.toldai.preview", category: "Timing")
 
 struct AppConfiguration {
     let apiURL: URL?
@@ -144,12 +147,14 @@ enum CredentialStore {
     private struct JobResponse<T: Decodable>: Decodable { let id: String; let status: String; let error: String?; let result: T? }
     private func job<T: Decodable>(_ body: [String: Any], as type: T.Type) async throws -> T {
         let id = body["requestID"] as! String
+        let started = Date(); var outcome = "failed"
+        defer { timingLog.info("stage=client_job jobID=\(id, privacy: .public) status=\(outcome, privacy: .public) durationMs=\(Int(Date().timeIntervalSince(started) * 1000))") }
         do {
             _ = try await api("jobs", method: "POST", body: JSONSerialization.data(withJSONObject: body))
             for _ in 0..<450 {
                 try Task.checkCancellation()
                 let response = try decoder.decode(JobResponse<T>.self, from: await api("jobs/\(id)"))
-                if response.status == "completed", let result = response.result { return result }
+                if response.status == "completed", let result = response.result { outcome = "completed"; return result }
                 if response.status == "failed" || response.status == "cancelled" { throw APIError(message: response.error ?? "This request was cancelled.") }
                 try await Task.sleep(for: .seconds(2))
             }
@@ -173,6 +178,8 @@ enum CredentialStore {
         answer.audioResource = try await AudioCache.download(id: answer.id, remote: answer.audioResource); return answer
     }
     func transcribe(_ recording: URL) async throws -> String {
+        let started = Date()
+        defer { timingLog.info("stage=client_transcription durationMs=\(Int(Date().timeIntervalSince(started) * 1000))") }
         let boundary = UUID().uuidString; var data = Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"question.m4a\"\r\nContent-Type: audio/mp4\r\n\r\n".utf8)
         data.append(try Data(contentsOf: recording)); data.append(Data("\r\n--\(boundary)--\r\n".utf8))
         struct Transcript: Decodable { let text: String }
@@ -187,7 +194,9 @@ enum CredentialStore {
     }
     static func download(id: String, remote: String) async throws -> String {
         guard UUID(uuidString: id) != nil, let url = URL(string: remote), let host = url.host, (url.scheme == "https" || (["127.0.0.1","localhost"].contains(host) && url.scheme == "http")) else { throw APIError(message: "The audio link is invalid.") }
-        let name = "\(id).mp3"; if self.url(name) != nil { return name }
+        let started = Date(); var cacheHit = false; var outcome = "failed"
+        defer { timingLog.info("stage=audio_download clipID=\(id, privacy: .public) cacheHit=\(cacheHit) status=\(outcome, privacy: .public) durationMs=\(Int(Date().timeIntervalSince(started) * 1000))") }
+        let name = "\(id).mp3"; if self.url(name) != nil { cacheHit = true; outcome = "completed"; return name }
         let (temporary, response) = try await URLSession.shared.download(from: url)
         defer { try? FileManager.default.removeItem(at: temporary) }
         guard let response = response as? HTTPURLResponse, response.statusCode == 200, response.mimeType?.hasPrefix("audio/") == true else { throw APIError(message: "Audio could not be downloaded. Refresh and try again.") }
@@ -195,6 +204,7 @@ enum CredentialStore {
         var destination = directory.appendingPathComponent(name)
         try FileManager.default.moveItem(at: temporary, to: destination)
         var values = URLResourceValues(); values.isExcludedFromBackup = true; try destination.setResourceValues(values)
+        outcome = "completed"
         return name
     }
     static func clear() { try? FileManager.default.removeItem(at: directory) }
