@@ -1,1 +1,9 @@
 .agents/
+
+# Xcode local/build artifacts
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xcresult
+.DS_Store

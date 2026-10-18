@@ -1,6 +1,6 @@
 # Category artwork system
 
-Approved direction: [concept](card-direction-v2.png). The concept contains example imagery; standalone production assets have not yet been generated. Do not crop controls or text out of the mockup to create production art.
+Approved direction: [concept](card-direction-v2.png). Three standalone initial illustrations are now bundled in the SwiftUI preview: Daily brief, Technology, and Our planet. See [asset provenance and prompts](../frontend/ASSET_PROVENANCE.md). Additional variants and production export review remain to be done. Do not crop controls or text out of the mockup to create production art.
 
 ## Initial library
 

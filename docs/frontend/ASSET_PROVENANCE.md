@@ -1,0 +1,15 @@
+# Frontend assets
+
+The three standalone artwork assets were generated with the built-in image-generation tool and saved in `ios/Told/Resources/Assets.xcassets/{daily,technology,planet}.imageset/image.png`. They are original conceptual illustrations, not news photography. The approved transparent logo is copied into `Wordmark.imageset`; SwiftUI renders its alpha as a template to follow appearance without modifying the source PNG.
+
+## Prompts
+
+**Daily:** Original standalone editorial illustration for the daily briefing of told., a premium audio news app. Warm sandstone sculptural arches rise above a quiet desert valley at sunrise, apricot light, muted burgundy shadows, subtle grain, diffuse soft light. Spacious sophisticated atmospheric composition, like a carefully commissioned illustrated album cover. Square canvas, broad scene that also crops well to portrait, main arches centered, quiet dark lower quarter for native overlay text. No text, logos, typography, UI, frame, watermarks, people or factual news imagery. Colorful but restrained, soft tactile forms, elegant composition matching the warm arch landscape in the approved told concept.
+
+**Technology:** Standalone square editorial illustration for Technology category in told. audio news app. A single elegant translucent optical prism standing in a sculptural lavender landscape, warm pearl sunlight refracting softly, muted lilac and dusty blue hills, peach sky, atmospheric soft grain and diffuse light, tactile illustrated album-cover style. Calm generous negative space, no busy details, central subject crops safely into portrait. Lower quarter darker lavender quiet terrain for native text overlays. Original conceptual art, no text, logos, UI, borders, people, neon circuits, or watermark. Premium understated dreamy illustration matching a soft sandstone sunrise arch collection.
+
+**Planet:** Standalone square editorial illustration for Our planet category of told. audio news app. Layered rolling sage and moss green hills, tiny slender cypress trees, a winding silver river, distant cream mist and softly lit warm sky. Sculptural graceful terrain, tactile subtle grain, atmospheric diffuse morning light, sophisticated calm album cover. No text, logos, UI, borders, people, buildings or watermark. Conceptual rather than news photography. Spacious central composition that crops safely to portrait, darker quiet green lower quarter for native overlays. Match a soft illustrated collection of apricot sandstone arches and lavender optical prism landscapes.
+
+## Audio
+
+Six AIFF files were synthesized locally using macOS `say`, Samantha, 165 words/minute. Five read the exact fixture transcripts; the answer clip offers a fixed listening transition. User-facing development disclaimers were removed from all six recordings; the answer clip is not a dynamically generated reading of the response text. No ElevenLabs credit was used. These are development fixtures; production speech should replace them through the documented adapter boundary.

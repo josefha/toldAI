@@ -1,5 +1,7 @@
 # toldAI UI build plan
 
+**Frontend implementation:** the native app now lives in [ios/Told.xcodeproj](ios/Told.xcodeproj). See [run instructions](ios/README.md), [frontend implementation plan](docs/frontend/IMPLEMENTATION_PLAN.md), [typed API contract](docs/frontend/API_CONTRACT.md), and [verification results](docs/frontend/VERIFICATION.md). The confirmed v1 slice covers email OTP simulation, interests, Home, briefing/story detail, player/conversation, Search/research, and profile/settings. Custom shows remain later scope.
+
 Build a mobile-first conversational audio app with a visual structure and core interactions closely informed by Huxe: a personalized home screen, topic discovery, custom shows, and an audio player that lets the listener join the conversation. Use the approved illustrated-card concept and native platform behavior. Huxe is a reference for atmosphere and hierarchy, not a pixel-level requirement.
 
 Updated MVP scope, 2026-10-18: English text and voice input/output; saved interests, language, and optional location; daily refreshed briefings. Five stories matched to the listener's interests, short summaries with source links, press-to-ask conversations, and on-demand research about a specific topic. The broader screen inventory below is a roadmap. Prioritize Home, the player, interests, source links, and questions before custom shows and the full discovery experience. See [Backend architecture](BACKEND_ARCHITECTURE.md) for module boundaries and implementation slices.

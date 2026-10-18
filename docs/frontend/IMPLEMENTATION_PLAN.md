@@ -2,7 +2,7 @@
 
 ## Scope
 
-Build a runnable iOS 18 app in `ios/Told.xcodeproj`, using the approved illustrated/monochrome direction and native navigation. Backend, OTP delivery, news research, and ElevenLabs are mocked. Audio playback uses bundled spoken fixtures so seeking, pause, speed, and resume can be exercised without API credentials. Recording simulation is explicitly labeled. No production auth or database changes.
+Build a runnable iOS 18 app in `ios/Told.xcodeproj`, using the approved illustrated/monochrome direction and native navigation. Backend, OTP delivery, news research, and ElevenLabs are mocked. Audio playback uses bundled spoken fixtures so seeking, pause, speed, and resume can be exercised without API credentials. Recording simulation is documented in the run guide. No production auth or database changes.
 
 ## Work sequence
 
@@ -17,3 +17,15 @@ Build a runnable iOS 18 app in `ios/Told.xcodeproj`, using the approved illustra
 ## Completion criteria
 
 All visible actions route or work; loading/empty/error/retry paths are recoverable; sign-out clears private demo state; no duplicated playback; cancel rejects late answers; Continue restores the story; refreshing does not replace active queue. Build and tests pass. Screenshot review is separate from physical-device audio/performance review, which cannot be claimed from simulator tests.
+
+## Implementation progress
+
+- Domain models, injected repositories, local demo storage, and API mapping are implemented.
+- Three standalone illustrations and the approved wordmark are bundled.
+- Sign-in/onboarding, Home, briefing/story/category details, sources/transcript, player/conversation, Ask/podcast and profile/settings are connected.
+- Real local audio drives pause, seek, speed, queue navigation and checkpoints. External speech/research/auth and recording remain explicitly mocked.
+- Automated state and UI journey tests are implemented. Final run results and screenshot review are recorded in VERIFICATION.md.
+
+## Continuous listening update
+
+Ask starts voice input in the existing player; the adjacent message control opens typing. Deep dives are inserted at the saved story offset. Follow-ups interrupt the current deep dive, keeping the original return point. Natural answer completion resumes the story automatically; Back to Story skips the answer. Session chapters expose inserted questions and interrupted branches. The middle Ask tab replaces Search and starts a new podcast through the same player.
