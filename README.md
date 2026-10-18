@@ -18,3 +18,7 @@ Start with the [deployment guide](docs/backend/DEPLOYMENT.md). Configure Supabas
 Email sign-in uses a real six-digit code. Voice questions record the microphone, pause narration, and insert a sourced answer into the same continuous timeline. The Ask tab creates a new episode using the same player. Daily editions are shared by interest group and cached locally after download.
 
 The implementation is ready to configure and deploy. Paid provider calls and external email delivery still need verification with your accounts. Audio currently downloads as complete clips; streaming, location-specific sourcing, licensed premium feeds, and lock-screen transport controls are deferred. Calendar and weather are outside the product scope.
+
+## Landing page
+
+The independent [React/TypeScript landing page](landing/README.md) is ready for Vercel with `landing` as the project root. It includes the told. artwork, interactive product previews and a configurable App Store placeholder. It has not been deployed.
