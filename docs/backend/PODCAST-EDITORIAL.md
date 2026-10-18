@@ -13,3 +13,15 @@ Two existing story transcripts were reused as evidence, without a new web search
 Local listening artifacts: `/tmp/told-podcast-comparison/story-1-sarah.mp3`, `story-2-sarah.mp3`, `results.json` (initial model comparison), and `final-results.json` (final scripts and audio timings). Temporary artifacts are not committed. Official model capabilities: https://developers.openai.com/api/docs/models/gpt-5.4-mini
 
 Validation: TypeScript check; 16 backend tests including local database integration, citation enforcement, and separate research/script model selection; real provider script and MP3 generation. Voice preference and performance remain listening-review decisions.
+
+## Expressive delivery (2026-10-18)
+
+Eryn (`dMyQqiVXTU80dDl2eNK8`) is the configured local voice. Daily scripts now aim at 240–270 words to leave more room for an unhurried delivery; the ten-minute total is approximate. All generated prose, including direct answers, uses the same relaxed spoken-writing guidance.
+
+Before every story or answer is rendered, `Providers.expressiveSpeech` asks the script model to choose one restrained tone per paragraph. The model can return only an allowlisted tone array; it cannot rewrite the narration. `delivery.ts` adds tone and slow-delivery cues plus short pauses between paragraphs. These are ElevenLabs interpretation cues, not exact pause lengths or a guaranteed words-per-minute control. Source text brackets are converted to parentheses so they cannot inject arbitrary audio directions. The saved/displayed transcript remains the original clean script.
+
+The optional direction request has an eight-second deadline. Failure, invalid output or a mismatched paragraph count falls back to calm delivery; cancellation of the generation still propagates. Timing events include `delivery_direction`, `delivery_fallback` and `delivery_ready`, without transcript content. Daily cache version 3 includes the delivery version.
+
+This is an expressive delivery layer in told's existing OpenAI-agent → ElevenLabs v4/v4 Turbo pipeline. It is **not** a hosted ElevenLabs Agent or its Expressive Mode switch. Hosted Agents also manage conversational state/turn taking and would require a separate integration decision. We continue to use press-to-ask, the existing research and citation rules, and recorded clips in the shared timeline. We do not currently infer emotions from the user's raw voice.
+
+Documentation: https://elevenlabs.io/docs/help-center/product/core-capabilities/text-to-speech/how-do-audio-tags-work-with-eleven-v3-and-v4 and https://elevenlabs.io/docs/eleven-agents/customization/voice/expressive-mode

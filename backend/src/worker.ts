@@ -1,3 +1,4 @@
+import { deliveryVersion } from "./delivery.js";
 import { measured, timing, withTiming } from "./timing.js";
 import { createHash, randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
@@ -58,7 +59,11 @@ export class Worker {
     signal: AbortSignal,
   ): Promise<Story> {
     signal.throwIfAborted();
-    const speech = await this.providers.speech(script.script, model, signal);
+    const speech = await this.providers.expressiveSpeech(
+      script.script,
+      model,
+      signal,
+    );
     signal.throwIfAborted();
     const audioResource = await measured(
       "storage_upload",
@@ -97,7 +102,8 @@ export class Worker {
           domains: this.config.NEWS_DOMAINS,
           scriptModel:
             this.config.OPENAI_SCRIPT_MODEL || this.config.OPENAI_MODEL,
-          version: 2,
+          version: 3,
+          deliveryVersion,
         }),
       )
       .digest("hex");
