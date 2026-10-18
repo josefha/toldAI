@@ -85,7 +85,6 @@ export default function App() {
     }
   }
   const [topic, setTopic] = useState(0);
-  const [deepDive, setDeepDive] = useState(false);
   const selected = topics[topic];
   return (
     <>
@@ -233,61 +232,21 @@ export default function App() {
         </section>
         <section className="listen-section">
           <div className="feature wrap reverse">
-            <div className="conversation-preview">
-              <div className="conversation-top">
-                <span className="tiny-label">
-                  ONE CONVERSATION. YOUR DIRECTION.
-                </span>
-                <span className="preview-label">Interactive preview</span>
+            <figure className="app-preview">
+              <div className="app-preview-frame">
+                <img
+                  src="/images/app-player.png"
+                  alt="The told. iPhone player showing an illustrated story, playback controls, and the Ask microphone button alongside typed questions."
+                  loading="lazy"
+                  width="1206"
+                  height="2622"
+                />
               </div>
-              <div className="record-disc">
-                <Wave active={deepDive} />
-              </div>
-              <div className="conversation-title" aria-live="polite">
-                <span className="tiny-label">
-                  {deepDive ? "A LITTLE DEEPER" : "NOW EXPLORING"}
-                </span>
-                <h3>
-                  {deepDive
-                    ? "Let’s look at it\nfrom another angle."
-                    : "The story behind\nthe headline."}
-                </h3>
-                <p>
-                  {deepDive
-                    ? "Your question becomes part of the story."
-                    : "A thought comes to mind? Follow it."}
-                </p>
-              </div>
-              <div
-                className={`timeline ${deepDive ? "expanded" : ""}`}
-                aria-label={
-                  deepDive
-                    ? "Story, your deep dive, then the story continues"
-                    : "Your story timeline"
-                }
-              >
-                <span />
-                <i />
-                <span className="branch" />
-                <i />
-                <span />
-              </div>
-              <div className="timeline-legend">
-                <span>Story</span>
-                <span className={deepDive ? "purple" : ""}>
-                  {deepDive ? "Your deep dive" : "Room for a question"}
-                </span>
-                <span>Continue</span>
-              </div>
-              <button
-                className="ask-button"
-                onClick={() => setDeepDive(!deepDive)}
-                aria-pressed={deepDive}
-              >
-                <span aria-hidden="true">{deepDive ? "↶" : "✳"}</span>
-                {deepDive ? "Back to the story" : "Explain that differently"}
-              </button>
-            </div>
+              <figcaption>
+                <span className="tiny-label">A LOOK INSIDE TOLD.</span>
+                <span>Pause. Ask. Keep exploring.</span>
+              </figcaption>
+            </figure>
             <div className="feature-copy">
               <span className="eyebrow">02 / MAKE ROOM FOR QUESTIONS</span>
               <h2>

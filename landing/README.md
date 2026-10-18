@@ -37,7 +37,7 @@ Reference: [Vite on Vercel](https://vercel.com/docs/frameworks/frontend/vite), [
 
 - Hero with original illustrated daily-five card.
 - Personal podcast section with three selectable example topics.
-- Listening section with an interactive, visual deep-dive timeline. This is a product illustration, with no microphone access or generated audio.
+- Listening section with an actual SwiftUI player screenshot from the repository, framed as an iPhone. This is a static app preview, with no microphone access or generated audio.
 - Light/dark toggle, initialized from system appearance and saved locally; linked creator credit to @josefkarakoca on X.
 - Closing App Store placeholder; no departure/shutdown message, signup form, or analytics.
 - Local DM Sans fonts with included license, optimized local artwork, keyboard focus states, skip link, and reduced-motion support.
@@ -46,4 +46,4 @@ The composition takes inspiration from the user's [Huxe reference](https://www.h
 
 ## Checked
 
-Production TypeScript/Vite build passes. Browser review covers desktop, 390px and 320px phone widths, loaded images, topic selection, deep-dive insertion/reset, and the placeholder link. No horizontal overflow at tested phone widths and no browser console errors. Screenshot: `../docs/landing/preview.jpg`.
+Production TypeScript/Vite build passes. Browser review covers desktop, 390px and 320px phone widths, loaded images, topic selection, the app screenshot, and the placeholder link. No horizontal overflow at tested phone widths and no browser console errors. Screenshot: `../docs/landing/preview.jpg`.
