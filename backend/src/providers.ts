@@ -21,6 +21,7 @@ export function citations(response: any): Source[] {
         try {
           const url = new URL(annotation.url);
           if (!["https:", "http:"].includes(url.protocol)) continue;
+          if (urls.has(url.href)) continue;
           urls.set(url.href, {
             id: String(urls.size + 1),
             name: url.hostname.replace(/^www\./, ""),
@@ -129,7 +130,12 @@ export class Providers {
                 category: { type: "string", enum: interests },
                 summary: { type: "string" },
                 script: { type: "string" },
-                sourceURLs: { type: "array", items: { type: "string" } },
+                sourceURLs: {
+                  type: "array",
+                  minItems: 1,
+                  maxItems: 10,
+                  items: { type: "string", enum: sources.map((source) => source.url) },
+                },
               },
               required: [
                 "title",

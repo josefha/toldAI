@@ -24,6 +24,11 @@ test("citations reject malformed and non-web URLs and deduplicate", () => {
               },
               {
                 type: "url_citation",
+                url: "https://example.com/second-report",
+                title: "Another report",
+              },
+              {
+                type: "url_citation",
                 url: "https://example.com/report",
                 title: "Report",
               },
@@ -33,7 +38,9 @@ test("citations reject malformed and non-web URLs and deduplicate", () => {
       },
     ],
   });
-  assert.equal(result.length, 1);
+  assert.equal(result.length, 2);
+  assert.equal(new Set(result.map((source) => source.id)).size, 2);
+  assert.deepEqual(result.map((source) => source.id), ["1", "2"]);
   assert.equal(result[0]?.name, "example.com");
 });
 test("research requires actual retrieved citations and rejects fabricated script links", async () => {
@@ -69,6 +76,7 @@ test("research requires actual retrieved citations and rejects fabricated script
         });
       }
       assert.equal(body.text.format.strict, true);
+      assert.deepEqual(body.text.format.schema.properties.sourceURLs.items.enum, ["https://example.com/report"]);
       return Response.json({
         status: "completed",
         output: [
