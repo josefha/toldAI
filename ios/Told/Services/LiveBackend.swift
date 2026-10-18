@@ -113,6 +113,21 @@ private enum CredentialStore {
         let data = try await authRequest("verify", body: ["email": email, "token": code, "type": "email"])
         try save(JSONDecoder().decode(AuthTokens.self, from: data)); return currentSession!
     }
+    #if DEBUG
+    func signIn(email: String, password: String) async throws -> UserSession {
+        try configured()
+        var components = URLComponents(url: configuration.supabaseURL!.appendingPathComponent("auth/v1/token"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "grant_type", value: "password")]
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = "POST"; request.timeoutInterval = 30
+        request.setValue(configuration.publishableKey, forHTTPHeaderField: "apikey")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["email": email, "password": password])
+        let data = try await response(request)
+        try save(JSONDecoder().decode(AuthTokens.self, from: data))
+        return currentSession!
+    }
+    #endif
     func signOut() async {
         let token = tokens?.access_token; refreshing?.cancel(); refreshing = nil; tokens = nil; CredentialStore.clear()
         if let token { _ = try? await authRequest("logout", body: nil, token: token) }

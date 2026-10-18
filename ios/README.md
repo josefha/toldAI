@@ -11,6 +11,8 @@ Native SwiftUI, iOS 18+, Xcode 16+. The app uses the real backend only.
 
 Never put service-role, OpenAI, or ElevenLabs secrets in the app. Tokens are stored in Keychain. The signed-in profile, downloaded edition, audio, and paused timeline are cached locally; signing out clears them. Source URLs open in the system browser.
 
+Debug builds default to email-and-password sign-in for confirmed test accounts while SMTP is pending. Use the credentials in the ignored local `backend/.env.test-account` file. This is real Supabase authentication and the same backend/session flow; passwords are not stored by the app. “Use an email code” switches back to OTP. Release builds contain only the email-code interface and exclude the password-login implementation. Keep Docker running (`docker compose up -d`) when the simulator uses `localhost:8080`.
+
 For a device/archive, choose your signing team and a unique bundle identifier (the checked-in development identifier is `com.toldai.preview`). Configure the public connection settings for Release as well. App Store icon, privacy disclosures, distribution signing, and store metadata remain account/release setup tasks.
 
 ## Flows

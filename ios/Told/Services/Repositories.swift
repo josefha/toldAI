@@ -5,7 +5,17 @@ import Foundation
     func verifyCode(email: String, code: String) async throws -> UserSession
     var currentSession: UserSession? { get }
     func signOut() async
+    #if DEBUG
+    func signIn(email: String, password: String) async throws -> UserSession
+    #endif
 }
+#if DEBUG
+extension AuthRepository {
+    func signIn(email: String, password: String) async throws -> UserSession {
+        throw APIError(message: "Password sign-in is unavailable for this connection.")
+    }
+}
+#endif
 @MainActor protocol NewsRepository {
     func dailyBriefing(interests: [Interest]) async throws -> Briefing
     func podcast(question: String) async throws -> Briefing

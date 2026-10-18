@@ -8,6 +8,10 @@ struct SignInView: View {
     @State private var verifiedSession: UserSession?
     @State private var busy = false
     @State private var error: String?
+    #if DEBUG
+    @State private var usePassword = true
+    @State private var password = ""
+    #endif
     @FocusState private var focused: Bool
     var body: some View {
         NavigationStack {
@@ -22,13 +26,25 @@ struct SignInView: View {
                     VStack(spacing: 16) {
                         if challenge == nil {
                             TextField("Email address", text: $email).textContentType(.emailAddress).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder).accessibilityIdentifier("emailField")
+                            #if DEBUG
+                            if usePassword {
+                                SecureField("Password", text: $password).textContentType(.password).textFieldStyle(.roundedBorder).accessibilityIdentifier("passwordField")
+                            }
+                            #endif
                         } else {
                             TextField("6-digit code", text: $code).textContentType(.oneTimeCode).keyboardType(.numberPad).textFieldStyle(.roundedBorder).accessibilityIdentifier("codeField")
                         }
                         if let error { ErrorNotice(message: error) }
                         Button { Task { await submit() } } label: {
-                            if busy { ProgressView().tint(.gray) } else { Text(challenge == nil ? "Send Code" : "Continue") }
-                        }.buttonStyle(PrimaryButtonStyle()).disabled(busy || (challenge == nil ? email.isEmpty : code.count != 6)).accessibilityIdentifier("authContinue")
+                            if busy { ProgressView().tint(.gray) } else { Text(submitTitle) }
+                        }.buttonStyle(PrimaryButtonStyle()).disabled(busy || !canSubmit).accessibilityIdentifier("authContinue")
+                        #if DEBUG
+                        if challenge == nil {
+                            Button(usePassword ? "Use an email code" : "Use a password") {
+                                usePassword.toggle(); password = ""; verifiedSession = nil; error = nil
+                            }.frame(minHeight: 44).disabled(busy).accessibilityIdentifier("authMethod")
+                        }
+                        #endif
                         if let challenge {
                             HStack {
                                 Button("Edit Email") { self.challenge = nil; verifiedSession = nil; code = ""; error = nil }.frame(minHeight: 44)
@@ -42,7 +58,24 @@ struct SignInView: View {
                     }
                 }.padding(24)
             }.background(Theme.canvas).scrollDismissesKeyboard(.interactively)
+            .disabled(busy)
+            #if DEBUG
+            .onChange(of: email) { _, _ in verifiedSession = nil }
+            .onChange(of: password) { _, _ in verifiedSession = nil }
+            #endif
         }
+    }
+    private var submitTitle: String {
+        #if DEBUG
+        if usePassword && challenge == nil { return "Sign In" }
+        #endif
+        return challenge == nil ? "Send Code" : "Continue"
+    }
+    private var canSubmit: Bool {
+        #if DEBUG
+        if usePassword && challenge == nil { return !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !password.isEmpty }
+        #endif
+        return challenge == nil ? !email.isEmpty : code.count == 6
     }
     private func resend() async {
         busy = true; error = nil; defer { busy = false }
@@ -51,6 +84,16 @@ struct SignInView: View {
     private func submit() async {
         busy = true; error = nil; defer { busy = false }
         do {
+            #if DEBUG
+            if usePassword && challenge == nil {
+                let session: UserSession
+                if let verifiedSession { session = verifiedSession }
+                else { session = try await model.auth.signIn(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password); verifiedSession = session }
+                try await model.accept(session)
+                password = ""
+                return
+            }
+            #endif
             if let challenge {
                 let session: UserSession
                 if let verifiedSession { session = verifiedSession } else { session = try await model.auth.verifyCode(email: challenge.email, code: code); verifiedSession = session }
