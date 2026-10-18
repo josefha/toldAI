@@ -38,7 +38,7 @@ Reference: [Vite on Vercel](https://vercel.com/docs/frameworks/frontend/vite), [
 - Hero with original illustrated daily-five card.
 - Personal podcast section with three selectable example topics.
 - Listening section with an actual SwiftUI player screenshot from the repository, framed as an iPhone. This is a static app preview, with no microphone access or generated audio.
-- Light/dark toggle, initialized from system appearance and saved locally; linked creator credit to @josefkarakoca on X.
+- Light/dark toggle, follows system appearance until explicitly chosen, saved locally and synchronized across tabs; linked creator credit to @josefkarakoca on X.
 - Closing App Store placeholder; no departure/shutdown message, signup form, or analytics.
 - Local DM Sans fonts with included license, optimized local artwork, keyboard focus states, skip link, and reduced-motion support.
 
@@ -47,3 +47,5 @@ The composition takes inspiration from the user's [Huxe reference](https://www.h
 ## Checked
 
 Production TypeScript/Vite build passes. Browser review covers desktop, 390px and 320px phone widths, loaded images, topic selection, the app screenshot, and the placeholder link. No horizontal overflow at tested phone widths and no browser console errors. Screenshot: `../docs/landing/preview.jpg`.
+
+Self-review fixes: skip-link focus now moves into the main content; browser theme color is set before React loads; OS appearance changes and cross-tab preferences stay synchronized; the app screenshot is optimized to approximately 60 KB. Verified keyboard navigation, cross-tab changes, reload persistence, topic selection, and 320/641/768/1024px layouts. Removed the retired conversation-preview CSS.

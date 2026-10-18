@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useTheme } from "./useTheme";
 
 const storeURL = import.meta.env.VITE_APP_STORE_URL?.trim();
 const topics = [
@@ -27,19 +28,19 @@ const topics = [
 function Arrow() {
   return <span aria-hidden="true">↗</span>;
 }
-function Wave({ active = false }: { active?: boolean }) {
+function Wave() {
   return (
-    <span className={`wave ${active ? "active" : ""}`} aria-hidden="true">
+    <span className="wave" aria-hidden="true">
       {[12, 23, 15, 31, 20, 36, 27, 15, 29, 19, 12].map((h, i) => (
-        <i key={i} style={{ height: h, animationDelay: `${i * 80}ms` }} />
+        <i key={i} style={{ height: h }} />
       ))}
     </span>
   );
 }
-function StoreLink({ light = false }: { light?: boolean }) {
+function StoreLink() {
   return (
     <a
-      className={`store-link ${light ? "light" : ""}`}
+      className="store-link"
       href={storeURL || "#download"}
       aria-label={
         storeURL ? "Find told. on the App Store" : "App Store — coming soon"
@@ -66,24 +67,7 @@ function StoreLink({ light = false }: { light?: boolean }) {
   );
 }
 export default function App() {
-  const [theme, setTheme] = useState<"light" | "dark">(() =>
-    document.documentElement.dataset.theme === "dark" ? "dark" : "light",
-  );
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", theme === "dark" ? "#111210" : "#f7f7f4");
-  }, [theme]);
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    try {
-      localStorage.setItem("told-theme", next);
-    } catch {
-      /* Theme still works when storage is unavailable. */
-    }
-  }
+  const { theme, toggleTheme } = useTheme();
   const [topic, setTopic] = useState(0);
   const selected = topics[topic];
   return (
@@ -128,7 +112,7 @@ export default function App() {
           </button>
         </div>
       </header>
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         <section className="hero wrap">
           <div className="hero-copy">
             <span className="eyebrow">
@@ -235,7 +219,7 @@ export default function App() {
             <figure className="app-preview">
               <div className="app-preview-frame">
                 <img
-                  src="/images/app-player.png"
+                  src="/images/app-player.jpg"
                   alt="The told. iPhone player showing an illustrated story, playback controls, and the Ask microphone button alongside typed questions."
                   loading="lazy"
                   width="1206"

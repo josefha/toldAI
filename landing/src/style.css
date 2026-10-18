@@ -14,7 +14,6 @@
   --canvas: #f7f7f4;
   --ink: #20201e;
   --surface: #ffffff;
-  --panel: #fcfcf9;
   --section: #eeeeea;
   --glass: #f7f7f4ed;
   --border: #deded7;
@@ -23,11 +22,8 @@
   --action: #20201e;
   --action-text: #ffffff;
   --action-hover: #44443e;
-  --disc: #e9e7df;
-  --disc-ring: #f3f3ee;
   --selection: #e9eddf;
   --track: #aaa99e;
-  --track-empty: #d5d4cb;
   --purple: #75538d;
 }
 * {
@@ -404,120 +400,6 @@ em {
 .reverse {
   gap: 95px;
 }
-.conversation-preview {
-  background: var(--panel);
-  border-radius: 26px;
-  padding: 28px;
-  box-shadow: 0 18px 60px #00000003;
-}
-.conversation-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-}
-.conversation-top > .tiny-label {
-  font-size: 7px;
-  letter-spacing: 1px;
-}
-.preview-label {
-  font-size: 8px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-.record-disc {
-  margin: 40px auto 25px;
-  border-radius: 50%;
-  width: 100px;
-  height: 100px;
-  background: var(--disc);
-  display: grid;
-  place-items: center;
-  color: var(--ink);
-  box-shadow: 0 0 0 12px var(--disc-ring);
-}
-.conversation-title {
-  text-align: center;
-  min-height: 145px;
-}
-.conversation-title > .tiny-label {
-  font-size: 8px;
-  color: var(--muted);
-}
-.conversation-title h3 {
-  white-space: pre-line;
-  font-size: 29px;
-  line-height: 1.12;
-  letter-spacing: -1px;
-  margin: 12px 0;
-}
-.conversation-title p {
-  font-size: 10px;
-  color: var(--muted);
-}
-.timeline {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-top: 30px;
-  height: 16px;
-}
-.timeline > span {
-  height: 3px;
-  background: var(--track);
-  flex: 1;
-}
-.timeline .branch {
-  flex: 0.35;
-  background: var(--track-empty);
-  transition:
-    flex 0.5s,
-    background 0.5s;
-}
-.timeline.expanded .branch {
-  flex: 1;
-  background: var(--purple);
-}
-.timeline i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--panel);
-  border: 2px solid var(--track);
-}
-.timeline.expanded i {
-  border-color: var(--purple);
-}
-.timeline-legend {
-  display: flex;
-  justify-content: space-between;
-  font-size: 8px;
-  color: var(--muted);
-  margin-top: 7px;
-}
-.purple {
-  color: var(--purple);
-}
-.ask-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  background: var(--action);
-  color: #fff;
-  border: 0;
-  border-radius: 99px;
-  width: 100%;
-  min-height: 49px;
-  font-size: 12px;
-  margin-top: 27px;
-}
-.ask-button:hover {
-  background: var(--action-hover);
-}
-.ask-button > span {
-  font-size: 20px;
-}
 .quote-list {
   display: flex;
   flex-direction: column;
@@ -558,8 +440,7 @@ em {
 .footer .wordmark {
   width: 73px;
 }
-.footer > span,
-.footer > small {
+.footer > span {
   font-size: 10px;
   color: var(--muted);
 }
@@ -573,14 +454,6 @@ em {
 }
 .skip-link:focus {
   top: 16px;
-}
-.active i {
-  animation: wave 1s ease-in-out infinite alternate;
-}
-@keyframes wave {
-  to {
-    transform: scaleY(0.45);
-  }
 }
 @media (min-width: 1500px) {
   .wrap {
@@ -628,14 +501,6 @@ em {
   }
   .interlude span + span:before {
     margin-right: 25px;
-  }
-  .conversation-preview {
-    padding: 20px;
-  }
-  .conversation-top {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
   }
   .topic-image {
     height: 290px;
@@ -721,16 +586,6 @@ em {
   .reverse .feature-copy {
     grid-row: 1;
   }
-  .conversation-preview {
-    padding: 26px;
-  }
-  .conversation-top {
-    flex-direction: row;
-    align-items: center;
-  }
-  .conversation-title {
-    min-height: 150px;
-  }
   .closing {
     padding-top: 80px;
     padding-bottom: 80px;
@@ -750,10 +605,6 @@ em {
   }
   .footer > span {
     margin-left: auto;
-  }
-  .footer > small {
-    width: 100%;
-    text-align: right;
   }
   .topic-options button {
     font-size: 12px;
@@ -779,7 +630,6 @@ em {
   --canvas: #111210;
   --ink: #f1f0e9;
   --surface: #242520;
-  --panel: #242520;
   --section: #191a17;
   --glass: #20211eeb;
   --border: #383a32;
@@ -789,11 +639,8 @@ em {
   --action: #e8eadf;
   --action-text: #1a1c17;
   --action-hover: #ffffff;
-  --disc: #373b2f;
-  --disc-ring: #2b2e25;
   --selection: #3b4431;
   --track: #919784;
-  --track-empty: #494d41;
 }
 :root[data-theme="dark"] .wordmark {
   filter: invert(1);
@@ -802,8 +649,7 @@ em {
   border-color: #ffffff20;
 }
 .store-link,
-.play-disc,
-.ask-button {
+.play-disc {
   color: var(--action-text);
 }
 .header-actions {
@@ -907,4 +753,8 @@ em {
   .app-preview-frame {
     width: min(100%, 260px);
   }
+}
+
+main:focus {
+  outline: none;
 }
