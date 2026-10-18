@@ -145,7 +145,8 @@ import Observation
                 try AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
                 try AVAudioSession.sharedInstance().setActive(true)
                 let sound = try AVAudioPlayer(data: cue.waveData)
-                sound.volume = 0.22; sound.prepareToPlay()
+                sound.volume = 1; // Cue samples are already mastered at the quiet preview level.
+                sound.prepareToPlay()
                 if sound.play() { cuePlayer = sound; leadIn += sound.duration }
             } catch { /* An optional cue must never prevent narration. */ }
         }
@@ -246,7 +247,7 @@ import Observation
 }
 
 
-/// Original, locally synthesized soft air-sweep cues: no network or licensed samples.
+/// Original, locally synthesized quiet soft-tap cues: no network or licensed samples.
 enum ListeningCue {
     case story, answer
     var waveData: Data {
@@ -254,24 +255,16 @@ enum ListeningCue {
         let length = self == .story ? 0.65 : 0.38
         let count = Int(Double(rate) * length)
         var pcm = Data(capacity: count * 2)
-        // Deterministic filtered noise: an airy sweep without a pitched notification tone.
-        var seed: UInt64 = 0x746F6C64
-        var low = 0.0
-        var body = 0.0
+        // Same low, gently descending felt tap as the approved preview.
+        // Story cues retain a silent tail to preserve the existing lead-in timing.
+        let tapLength = 0.38
         for i in 0..<count {
             let time = Double(i) / Double(rate)
-            let progress = time / length
-            seed = seed &* 6364136223846793005 &+ 1
-            let noise = Double(seed >> 32) / Double(UInt32.max) * 2 - 1
-            // Gently opens then closes the filter, keeping the high end soft.
-            let arc = pow(sin(Double.pi * progress), 2)
-            let cutoff = 650 + 1400 * arc
-            let coefficient = 1 - exp(-2 * Double.pi * cutoff / Double(rate))
-            low += coefficient * (noise - low)
-            body += 0.025 * (low - body)
-            let envelope = pow(sin(Double.pi * progress), 1.8)
-            let sample = 0.85 * envelope * (low - 0.65 * body)
-            var value = Int16(max(-1, min(1, sample)) * 32760).littleEndian
+            let phase = 2 * Double.pi * (240 * time + 65 * 0.045 * (1 - exp(-time / 0.045)))
+            let release = max(0, min(1, (tapLength - time) / 0.08))
+            let envelope = pow(1 - exp(-time / 0.022), 2) * exp(-time / 0.065) * release
+            let sample = 0.12 * envelope * (sin(phase) + 0.10 * sin(phase * 1.5))
+            var value = Int16(max(-1, min(1, sample)) * 32767).littleEndian
             withUnsafeBytes(of: &value) { pcm.append(contentsOf: $0) }
         }
         var data = Data()
