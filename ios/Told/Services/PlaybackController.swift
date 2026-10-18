@@ -246,7 +246,7 @@ import Observation
 }
 
 
-/// Original, locally synthesized felt-bell cues: no network or licensed samples.
+/// Original, locally synthesized rounded marimba cues: no network or licensed samples.
 enum ListeningCue {
     case story, answer
     var waveData: Data {
@@ -254,17 +254,21 @@ enum ListeningCue {
         let length = self == .story ? 0.65 : 0.38
         let count = Int(Double(rate) * length)
         var pcm = Data(capacity: count * 2)
-        let notes: [(Double, Double)] = self == .story ? [(0, 523.25), (0.22, 659.25)] : [(0, 523.25)]
+        let notes: [(Double, Double)] = self == .story ? [(0, 523.25), (0.105, 659.25), (0.22, 783.99)] : [(0, 659.25)]
         for i in 0..<count {
             let time = Double(i) / Double(rate)
             var sample = 0.0
             for (onset, frequency) in notes {
                 let t = time - onset
                 guard t >= 0 else { continue }
-                let attack = min(1, t / 0.025)
-                let release = min(1, max(0, (length - time) / 0.1))
-                let envelope = attack * exp(-t * 8) * release
-                sample += 0.55 * envelope * (sin(2 * .pi * frequency * t) + 0.12 * sin(2 * .pi * frequency * 2 * t))
+                let attack = 1 - exp(-t / 0.008)
+                let release = min(1, max(0, (length - time) / 0.12))
+                // A tiny falling pitch transient gives each note a rounded, tactile pop.
+                let phase = 2 * Double.pi * frequency * (t + 0.018 * 0.018 * (1 - exp(-t / 0.018)))
+                let body = sin(phase) * exp(-t * 8)
+                let wood = 0.22 * sin(phase * 2) * exp(-t * 22)
+                let warmth = 0.12 * sin(phase * 0.5) * exp(-t * 11)
+                sample += 0.48 * attack * release * (body + wood + warmth)
             }
             var value = Int16(max(-1, min(1, sample)) * 32760).littleEndian
             withUnsafeBytes(of: &value) { pcm.append(contentsOf: $0) }

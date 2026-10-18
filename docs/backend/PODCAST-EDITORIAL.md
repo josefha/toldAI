@@ -28,6 +28,6 @@ Documentation: https://elevenlabs.io/docs/help-center/product/core-capabilities/
 
 ## Player cues
 
-The iOS player synthesizes its own quiet felt-bell tones locally: two notes over 0.65 seconds before a new story, or one note over 0.38 seconds before an answer, followed by 0.3 seconds before narration. Automatic changes between stories first wait one second. Returning from a deep dive to the same story retains the 1.4-second breathing pause without a new-story cue. Pause/resume and timeline scrubbing do not replay cues. Manual story skips use the cue without the inter-story wait.
+The iOS player synthesizes its own quiet rounded marimba tones locally: a three-note ascending flourish over 0.65 seconds before a new story, or one note over 0.38 seconds before an answer, followed by 0.3 seconds before narration. Automatic changes between stories first wait one second. Returning from a deep dive to the same story retains the 1.4-second breathing pause without a new-story cue. Pause/resume and timeline scrubbing do not replay cues. Manual story skips use the cue without the inter-story wait.
 
 Cues play only after local narration audio has loaded. Pausing, asking, skipping, clearing the session, audio interruption or headphone removal cancels pending cue playback. Cue failure falls through to speech. Voice & Playback includes a local, immediately saved Transition sounds toggle; turning it off silences cues while retaining breathing pauses. Cues are outside the story timeline and do not change narration positions or deep-dive checkpoints.
