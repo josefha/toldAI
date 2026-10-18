@@ -66,6 +66,32 @@ import AVFoundation
         XCTAssertEqual(audio.position, 8, accuracy: 0.4)
         XCTAssertFalse(audio.isPlaying)
     }
+    func testFinishedTranscriptionSendsOnceWithoutConfirmation() async throws {
+        let audio = PlaybackController(store: local)
+        audio.start(try await backend.dailyBriefing(interests: []))
+        let conversation = ConversationModel(news: backend, playback: audio, recorder: TestRecorder(controls: controls))
+        conversation.startRecording()
+        try await Task.sleep(for: .milliseconds(30))
+        conversation.sendRecording(); conversation.sendRecording()
+        XCTAssertEqual(conversation.phase, .transcribing)
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertEqual(conversation.phase, .answered)
+        XCTAssertEqual(conversation.answers.count, 1)
+        XCTAssertEqual(conversation.answers.first?.question, "Why does this matter?")
+        conversation.cancel()
+    }
+    func testCancelledTranscriptionDoesNotSend() async throws {
+        let audio = PlaybackController(store: local)
+        audio.start(try await backend.dailyBriefing(interests: []))
+        let conversation = ConversationModel(news: backend, playback: audio, recorder: TestRecorder(controls: controls))
+        conversation.startRecording()
+        try await Task.sleep(for: .milliseconds(30))
+        conversation.sendRecording(); conversation.cancel()
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertEqual(conversation.phase, .idle)
+        XCTAssertTrue(conversation.answers.isEmpty)
+    }
+
     func testAnswerContinueRestoresStoryAndPosition() async throws {
         let briefing = try await backend.dailyBriefing(interests: [])
         let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })

@@ -65,7 +65,7 @@ struct PlayerView: View {
             switch conversation.phase {
             case .recording:
                 ListeningIndicator()
-                Button("Send Question") { conversation.sendRecording() }.buttonStyle(PrimaryButtonStyle()).accessibilityIdentifier("sendVoiceQuestion")
+                Button("Finish & Ask") { conversation.sendRecording() }.buttonStyle(PrimaryButtonStyle()).accessibilityIdentifier("sendVoiceQuestion")
                 Button("Cancel") { conversation.cancel(resume: true) }.frame(minHeight: 44)
             case .composing, .failed:
                 TextField("What are you curious about?", text: $conversation.draft, axis: .vertical).lineLimit(2...5).textFieldStyle(.roundedBorder).accessibilityIdentifier("questionField")

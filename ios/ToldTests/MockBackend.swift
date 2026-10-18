@@ -11,7 +11,7 @@ import Observation
 }
 @MainActor final class MockBackend: AuthRepository, NewsRepository, ProfileRepository {
     var currentSession: UserSession? { nil }
-    func transcribe(_ recording: URL) async throws -> String { "Why does this matter?" }
+    func transcribe(_ recording: URL) async throws -> String { try await Task.sleep(for: .milliseconds(20)); return "Why does this matter?" }
     func deleteAccount() async throws {}
     let controls: DemoControls
     private var challenge: AuthChallenge?

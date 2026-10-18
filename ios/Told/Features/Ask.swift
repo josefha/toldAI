@@ -24,8 +24,8 @@ struct AskView: View {
                     Button("Cancel") { cancel() }.frame(minHeight: 44)
                 } else if listening {
                     ListeningIndicator()
-                    Button("Start Listening") { sendRecording() }.buttonStyle(PrimaryButtonStyle()).accessibilityIdentifier("sendVoiceQuestion")
-                    Button("Cancel") { recorder.cancel(); listening = false }.frame(minHeight: 44)
+                    Button("Finish & Ask") { sendRecording() }.buttonStyle(PrimaryButtonStyle()).accessibilityIdentifier("sendVoiceQuestion")
+                    Button("Cancel") { cancel(); recorder.cancel(); listening = false }.frame(minHeight: 44)
                 } else {
                     if typing {
                         TextField("What would you like to know?", text: $draft, axis: .vertical).lineLimit(3...6).padding(18).background(Theme.surface, in: RoundedRectangle(cornerRadius: 20)).focused($focused).accessibilityIdentifier("researchField")
@@ -46,14 +46,28 @@ struct AskView: View {
         }.background(Theme.canvas).scrollDismissesKeyboard(.interactively).navigationTitle("Ask").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false }.accessibilityIdentifier("dismissAskKeyboard") } }
             .onDisappear { cancel(); recorder.cancel(); listening = false }
-            .onChange(of: scenePhase) { _, phase in if phase != .active { recorder.cancel(); listening = false } }
+            .onChange(of: scenePhase) { _, phase in if phase != .active && listening { cancel(); recorder.cancel(); listening = false } }
     }
     private func startRecording() {
         cancel(); focused = false; model.playback.pause(); error = nil
         let id = UUID(); requestID = id
-        task = Task { do { try await recorder.start(); guard requestID == id, !Task.isCancelled else { recorder.cancel(); return }; listening = true } catch { guard requestID == id else { return }; self.error = error.localizedDescription; typing = true } }
+        task = Task {
+            do {
+                try await recorder.start()
+                guard requestID == id, !Task.isCancelled else { recorder.cancel(); return }
+                listening = true
+                try await Task.sleep(for: .seconds(60))
+                guard requestID == id, !Task.isCancelled else { return }
+                sendRecording()
+            } catch is CancellationError { } catch {
+                guard requestID == id else { return }
+                self.error = error.localizedDescription; typing = true
+            }
+        }
     }
     private func sendRecording() {
+        guard listening else { return }
+        task?.cancel()
         let id = UUID(); requestID = id; listening = false; busy = true; error = nil
         task = Task {
             do {

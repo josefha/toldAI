@@ -103,6 +103,7 @@ import Observation
         }
     }
     func sendRecording() {
+        guard phase == .recording else { return }
         task?.cancel(); let id = UUID(); requestID = id; phase = .transcribing; error = nil
         task = Task { [weak self] in
             guard let self else { return }

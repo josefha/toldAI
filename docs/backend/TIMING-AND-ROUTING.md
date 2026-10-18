@@ -74,3 +74,11 @@ A real simulator context question on the Meta story ("What does scraping mean he
 If the first part finishes before the rest arrives, the player waits in the same deep dive. Pause prevents automatic continuation. Asking again cuts the previous segment at the heard position. Failed continuation stops waiting and offers retry/continue. Restoring an interrupted app session retains available audio as complete; it does not reconnect to an unfinished generation job.
 
 Validation: 20 backend tests (including real local database authorization, partial publication, continuation and storage cleanup), plus 21 passing Swift unit tests including playback handoff, seeking, pause, failure and interrupting a pending passage. Real provider API and simulator playback checked separately.
+
+## Transcription latency trial
+
+The local configuration now uses `gpt-4o-mini-transcribe` (already the repository default). Three alternating calls per model on the same short synthetic English question returned identical text. Mini took 734/726/534ms; `gpt-transcribe` took 958/782/1673ms. These are provider request timings, excluding phone upload and answer generation; real microphone, accent and noise accuracy still needs listening tests. Raw local results: `/tmp/told-transcription-comparison.json`.
+
+Both player and Ask voice input submit a successful transcript immediately, without a text-confirmation step. Finish & Ask ends recording; the 60-second recording limit also submits automatically in both flows. Cancel discards the request. Repeated finish taps are ignored once transcription starts. This remains push-to-ask, not automatic silence detection or continuous microphone streaming.
+
+Official supported file transcription models: https://developers.openai.com/api/docs/guides/speech-to-text
