@@ -133,7 +133,9 @@ export async function createAPI(
           status: job.status,
           error: job.error,
           result:
-            job.status === "completed" && job.result
+            (job.status === "completed" ||
+              (job.status === "running" && job.kind === "question")) &&
+            job.result
               ? await withTiming({ jobID: job.id }, () =>
                   measured("signed_audio_urls", () =>
                     store.hydrate(job.result!),
@@ -190,13 +192,18 @@ export async function createAPI(
         check(sessionError);
         const { data: answers, error: answerError } = await store.db
           .from("answers")
-          .select("id")
+          .select("id,data")
           .eq("user_id", user.id);
         check(answerError);
         // Daily cache audio is shared; only user-specific generation uses job IDs.
         const files = [...(sessions ?? []), ...(answers ?? [])].map(
           (row) => `${row.id}.mp3`,
         );
+        for (const row of answers ?? [])
+          for (const part of row.data?.audioParts ?? []) {
+            if (typeof part.audioResource === "string")
+              files.push(part.audioResource);
+          }
         if (files.length) {
           const { error } = await store.db.storage
             .from("told-audio")

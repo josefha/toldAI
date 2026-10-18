@@ -1,6 +1,7 @@
 import Foundation
 import AVFoundation
 import Observation
+import OSLog
 
 @MainActor @Observable final class PlaybackController: NSObject, AVAudioPlayerDelegate {
     private(set) var briefing: Briefing?
@@ -18,6 +19,10 @@ import Observation
     var error: String?
     var speed: Float = 1 { didSet { player?.rate = speed; persist() } }
     var transitionSoundsEnabled = true { didSet { store.save(transitionSoundsEnabled, key: "transitionSounds"); if !transitionSoundsEnabled { cuePlayer?.stop() } } }
+    private var answerRequestedAt: Date?
+    private var audioPartIndex = 0
+    private var waitingForAudio = false
+    private var audioOffset: Double { guard let parts = activeAnswer?.audioParts else { return 0 }; return parts.prefix(audioPartIndex).reduce(0) { $0 + $1.duration } }
     private var cuePlayer: AVAudioPlayer?
     private var player: AVAudioPlayer?
     private let audioResolver: (String) -> URL?
@@ -76,11 +81,12 @@ import Observation
         index = segment.storyIndex; selectedSegmentID = segment.id
         activeAnswer = segment.answer; isAnswer = segment.answer != nil
         checkpointPosition = segment.answer.flatMap { answer in deepDives.first { $0.id == answer.id }?.storyPosition }
-        loadAudio(segment.answer?.audioResource ?? briefing.stories[index].audioResource)
+        if let answer = segment.answer { loadAnswerAudio(answer) } else { loadAudio(briefing.stories[index].audioResource) }
         seek(segment.start + min(offset, segment.duration))
         if resume && offset < segment.duration - 0.01 { if let cue { playWithCue(cue) } else { play() } }
     }
     private func cancelTransition() {
+        waitingForAudio = false
         cuePlayer?.stop(); cuePlayer = nil
         transitionTask?.cancel(); transitionTask = nil; transitionID = UUID(); isTransitioning = false
     }
@@ -91,17 +97,21 @@ import Observation
         transitionSoundsEnabled = store.load("transitionSounds") ?? true
         if let saved: PlaybackCheckpoint = store.load("playback"), saved.briefing.stories.indices.contains(saved.index) {
             briefing = saved.briefing; index = saved.index; speed = saved.speed
-            deepDives = saved.deepDives ?? []
+            deepDives = (saved.deepDives ?? []).map { dive in
+                var restored = dive
+                if restored.answer.audioComplete == false { restored.answer.audioComplete = true }
+                return restored
+            }
             if let answer = deepDives.first(where: { $0.id == saved.activeAnswerID })?.answer {
                 activeAnswer = answer; isAnswer = true; checkpointPosition = saved.position
-                loadAudio(answer.audioResource); seek(saved.answerPosition ?? 0)
+                loadAnswerAudio(answer); seek(saved.answerPosition ?? 0)
             } else { loadAudio(saved.briefing.stories[index].audioResource); seek(saved.position) }
         }
         ticker = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] timer in
             guard let self else { timer.invalidate(); return }
             Task { @MainActor in
-                guard let player = self.player else { return }
-                self.position = player.currentTime
+                guard let player = self.player, !self.waitingForAudio else { return }
+                self.position = self.audioOffset + player.currentTime
                 self.isPlaying = player.isPlaying
                 self.persist()
                 if self.isPlaying, let segment = self.segments.first(where: { $0.id == self.currentSegmentID }), self.position >= segment.end - 0.04 {
@@ -117,7 +127,7 @@ import Observation
         if note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue { pause() }
     }
     private func loadAudio(_ resource: String) {
-        player?.stop(); player = nil; isPlaying = false; error = nil
+        player?.stop(); player = nil; audioPartIndex = 0; isPlaying = false; error = nil
         guard let url = audioResolver(resource) else { error = "This audio isn’t downloaded. Pull down to refresh Home, then open the story again."; player = nil; return }
         do {
             let audio = try AVAudioPlayer(contentsOf: url)
@@ -167,11 +177,61 @@ import Observation
                 player.currentTime = 0
             }
             player.play(); isPlaying = player.isPlaying
+            if isPlaying, isAnswer, let started = answerRequestedAt {
+                Logger(subsystem: "com.toldai.preview", category: "Timing").info("stage=client_answer_playing durationMs=\(Int(Date().timeIntervalSince(started) * 1000))")
+                answerRequestedAt = nil
+            }
         } catch { self.error = "Audio is unavailable. Try again." }
     }
-    func pause() { cancelTransition(); player?.pause(); isPlaying = false; persist() }
+    func pause() { waitingForAudio = false; cancelTransition(); player?.pause(); isPlaying = false; persist() }
     func toggle() { (isPlaying || isTransitioning) ? pause() : play() }
-    func seek(_ value: Double) { let clamped = min(max(0, value), duration); player?.currentTime = clamped; position = clamped; persist() }
+    func seek(_ value: Double) {
+        let clamped = min(max(0, value), duration)
+        if let answer = activeAnswer, let parts = answer.audioParts, !parts.isEmpty {
+            var offset = 0.0
+            for (i, part) in parts.enumerated() {
+                if clamped < offset + part.duration || i == parts.count - 1 {
+                    if audioPartIndex != i {
+                        let resume = isPlaying
+                        loadAnswerAudio(answer, part: i)
+                        player?.currentTime = clamped - offset
+                        if resume { play() }
+                    } else { player?.currentTime = clamped - offset }
+                    break
+                }
+                offset += part.duration
+            }
+        } else { player?.currentTime = clamped }
+        position = clamped; persist()
+    }
+    private func loadAnswerAudio(_ answer: ResearchAnswer, part: Int = 0) {
+        guard let parts = answer.audioParts, !parts.isEmpty else { loadAudio(answer.audioResource); return }
+        guard parts.indices.contains(part) else { return }
+        loadAudio(parts[part].audioResource)
+        audioPartIndex = part
+        duration = parts.reduce(0) { $0 + $1.duration }
+        position = audioOffset
+    }
+    func updateAnswer(_ answer: ResearchAnswer) {
+        guard let i = deepDives.firstIndex(where: { $0.id == answer.id }) else { return }
+        deepDives[i].answer = answer
+        if let parts = answer.audioParts { deepDives[i].audioDuration = parts.reduce(0) { $0 + $1.duration } }
+        guard activeAnswer?.id == answer.id else { persist(); return }
+        activeAnswer = answer; duration = deepDives[i].audioDuration
+        if waitingForAudio {
+            waitingForAudio = false; cancelTransition()
+            if let parts = answer.audioParts, parts.indices.contains(audioPartIndex + 1) {
+                loadAnswerAudio(answer, part: audioPartIndex + 1); play()
+            } else { finishCurrentSegment() }
+        }
+        persist()
+    }
+    func failPendingAnswer() {
+        guard var answer = activeAnswer, answer.audioComplete == false else { return }
+        answer.audioComplete = true
+        pause(); updateAnswer(answer)
+        error = "The rest of this answer could not load. You can ask again or continue the story."
+    }
     func skip(_ delta: Int) {
         guard let briefing else { return }
         let target = index + delta
@@ -187,10 +247,11 @@ import Observation
         pause()
         finishDive(interrupted: true)
     }
-    func playAnswer(_ answer: ResearchAnswer) {
+    func playAnswer(_ answer: ResearchAnswer, requestedAt: Date? = nil) {
+        answerRequestedAt = requestedAt
         deepDives.append(DeepDive(id: answer.id, storyID: story?.id ?? "", storyPosition: checkpointPosition ?? position, answer: answer, parentDiveID: activeAnswer?.id, parentPosition: isAnswer ? position : nil))
         cancelTransition(); selectedSegmentID = nil
-        activeAnswer = answer; isAnswer = true; loadAudio(answer.audioResource)
+        activeAnswer = answer; isAnswer = true; loadAnswerAudio(answer)
         deepDives[deepDives.count - 1].audioDuration = duration
         playWithCue(.answer)
     }
@@ -208,15 +269,24 @@ import Observation
     private func finishDive(interrupted: Bool) {
         guard isAnswer, let id = activeAnswer?.id, let i = deepDives.firstIndex(where: { $0.id == id }) else { return }
         deepDives[i].heard = position
-        deepDives[i].interrupted = interrupted && position < deepDives[i].audioDuration - 0.1
+        deepDives[i].interrupted = interrupted && (activeAnswer?.audioComplete == false || position < deepDives[i].audioDuration - 0.1)
     }
     func finishCurrentSegment() {
         guard !isTransitioning else { return }
+        if let answer = activeAnswer, let parts = answer.audioParts, !deepDives.contains(where: { $0.id == answer.id && $0.interrupted }) {
+            if parts.indices.contains(audioPartIndex + 1) {
+                loadAnswerAudio(answer, part: audioPartIndex + 1); play(); return
+            }
+            if answer.audioComplete == false {
+                player?.pause(); position = duration; isPlaying = false
+                waitingForAudio = true; isTransitioning = true; persist(); return
+            }
+        }
         let timeline = segments
         guard let current = timeline.firstIndex(where: { $0.id == currentSegmentID }) else { return }
         player?.pause(); isPlaying = false
         position = timeline[current].end
-        player?.currentTime = position
+        player?.currentTime = position - audioOffset
         if isAnswer { finishDive(interrupted: deepDives.first { $0.id == activeAnswer?.id }?.interrupted ?? false) }
         guard timeline.indices.contains(current + 1) else { persist(); return }
         let next = timeline[current + 1]

@@ -35,13 +35,11 @@ export class Store {
     return data?.data ?? defaultProfile(userID, email);
   }
   async saveProfile(userID: string, profile: Profile) {
-    const { error } = await this.db
-      .from("profiles")
-      .upsert({
-        user_id: userID,
-        data: profile,
-        updated_at: new Date().toISOString(),
-      });
+    const { error } = await this.db.from("profiles").upsert({
+      user_id: userID,
+      data: profile,
+      updated_at: new Date().toISOString(),
+    });
     check(error);
   }
   async job(id: string, userID: string): Promise<Job> {
@@ -117,7 +115,20 @@ export class Store {
           })),
         ),
       };
-    return { ...result, audioResource: await signed(result.audioResource) };
+    return {
+      ...result,
+      audioResource: await signed(result.audioResource),
+      ...(result.audioParts
+        ? {
+            audioParts: await Promise.all(
+              result.audioParts.map(async (part) => ({
+                ...part,
+                audioResource: await signed(part.audioResource),
+              })),
+            ),
+          }
+        : {}),
+    };
   }
   async limit(userID: string, bucket: string, maximum: number) {
     const { data, error } = await this.db.rpc("consume_usage", {

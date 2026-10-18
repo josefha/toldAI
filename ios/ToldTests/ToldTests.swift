@@ -257,4 +257,55 @@ import AVFoundation
         audio.pause()
     }
 
+    func testProgressiveAnswerContinuesWithoutDuplicateDiveOrCue() async throws {
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
+        audio.start(try await backend.dailyBriefing(interests: [])); audio.seek(5); audio.beginQuestion()
+        var answer = try await backend.research(QuestionRequest(requestID: UUID(), question: "Why?", storyID: audio.story?.id, previousTurns: []))
+        let file = Bundle(for: ToldTests.self).url(forResource: "answer", withExtension: "aiff")!
+        let length = try AVAudioPlayer(contentsOf: file).duration
+        answer.audioParts = [AnswerAudioPart(id: "one", audioResource: "answer", duration: length)]; answer.audioComplete = false
+        audio.playAnswer(answer); audio.pause(); audio.finishCurrentSegment()
+        XCTAssertTrue(audio.isTransitioning); XCTAssertTrue(audio.isAnswer)
+        answer.audioParts!.append(AnswerAudioPart(id: "two", audioResource: "answer", duration: length)); answer.audioComplete = true
+        audio.updateAnswer(answer)
+        XCTAssertEqual(audio.deepDives.count, 1); XCTAssertEqual(audio.duration, length * 2, accuracy: 0.01)
+        XCTAssertTrue(audio.isPlaying); XCTAssertFalse(audio.isTransitioning)
+        XCTAssertEqual(audio.position, length, accuracy: 0.1)
+        audio.pause(); audio.seek(length + 2)
+        XCTAssertEqual(audio.position, length + 2, accuracy: 0.1)
+        audio.finishCurrentSegment()
+        try await Task.sleep(for: .milliseconds(1500))
+        XCTAssertFalse(audio.isAnswer); XCTAssertEqual(audio.position, 5, accuracy: 0.4)
+        audio.pause()
+    }
+    func testInterruptingPendingPassageKeepsItsTimelineCutoff() async throws {
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
+        audio.start(try await backend.dailyBriefing(interests: [])); audio.beginQuestion()
+        var answer = try await backend.research(QuestionRequest(requestID: UUID(), question: "Why?", storyID: audio.story?.id, previousTurns: []))
+        let length = try AVAudioPlayer(contentsOf: Bundle(for: ToldTests.self).url(forResource: "answer", withExtension: "aiff")!).duration
+        answer.audioParts = [AnswerAudioPart(id: "one", audioResource: "answer", duration: length)]; answer.audioComplete = false
+        audio.playAnswer(answer); audio.pause(); audio.finishCurrentSegment()
+        audio.beginQuestion()
+        XCTAssertTrue(audio.deepDives[0].interrupted)
+        XCTAssertEqual(audio.deepDives[0].heard, length, accuracy: 0.01)
+        XCTAssertFalse(audio.isTransitioning)
+    }
+
+    func testProgressiveCompletionRespectsPauseAndFailureStopsWaiting() async throws {
+        let audio = PlaybackController(store: local, audioResolver: { Bundle(for: ToldTests.self).url(forResource: $0, withExtension: "aiff") })
+        audio.start(try await backend.dailyBriefing(interests: [])); audio.beginQuestion()
+        var answer = try await backend.research(QuestionRequest(requestID: UUID(), question: "Why?", storyID: audio.story?.id, previousTurns: []))
+        let length = try AVAudioPlayer(contentsOf: Bundle(for: ToldTests.self).url(forResource: "answer", withExtension: "aiff")!).duration
+        answer.audioParts = [AnswerAudioPart(id: "one", audioResource: "answer", duration: length)]; answer.audioComplete = false
+        audio.playAnswer(answer); audio.pause(); audio.finishCurrentSegment(); audio.pause()
+        answer.audioParts!.append(AnswerAudioPart(id: "two", audioResource: "answer", duration: length)); answer.audioComplete = true
+        audio.updateAnswer(answer)
+        XCTAssertFalse(audio.isPlaying); XCTAssertFalse(audio.isTransitioning)
+        audio.play(); XCTAssertTrue(audio.isPlaying); audio.pause()
+        audio.beginQuestion()
+        var pending = answer; pending.audioComplete = false; pending.audioParts = [pending.audioParts![0]]
+        audio.playAnswer(pending); audio.pause(); audio.finishCurrentSegment(); audio.failPendingAnswer()
+        XCTAssertFalse(audio.isPlaying); XCTAssertFalse(audio.isTransitioning); XCTAssertNotNil(audio.error)
+    }
+
 }

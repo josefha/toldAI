@@ -10,6 +10,9 @@ export const routeResult = z.object({
   summary: z.string(),
   script: z.string(),
   sourceURLs: z.array(z.string()),
+  tone: z
+    .enum(["calm", "warm", "curious", "thoughtful", "reassuring", "serious"])
+    .optional(),
 });
 export function contextSources(context: string): Source[] {
   try {

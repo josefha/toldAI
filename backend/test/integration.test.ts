@@ -26,6 +26,16 @@ test(
     const store = new Store(config);
     const users: string[] = [];
     const audioFiles: string[] = [];
+    let progressive = false;
+    let speechCalls = 0;
+    let releaseSecond!: () => void;
+    let secondStarted!: () => void;
+    const secondGate = new Promise<void>((resolve) => {
+      releaseSecond = resolve;
+    });
+    const secondSignal = new Promise<void>((resolve) => {
+      secondStarted = resolve;
+    });
     class TestProviders extends Providers {
       override async research() {
         return {
@@ -46,9 +56,17 @@ test(
         };
       }
       override async answer() {
-        return this.research();
+        const draft = await this.research();
+        if (progressive)
+          draft.script =
+            "This opening explains the main idea in a short complete sentence. The remaining explanation adds useful background and a simple example so the listener can understand why this particular change matters to people today.";
+        return draft;
       }
       override async speech() {
+        if (progressive && ++speechCalls === 2) {
+          secondStarted();
+          await secondGate;
+        }
         return { audio: Buffer.from("test audio bytes"), duration: 12 };
       }
     }
@@ -257,6 +275,57 @@ test(
       assert.equal(completedAnswer.result.question, "Explain the implications");
       assert.equal((await store.history(a.id, id, [followUpID])).length, 1);
       await assert.rejects(store.history(b.id, id, [followUpID]));
+      progressive = true;
+      speechCalls = 0;
+      const progressiveID = randomUUID();
+      await app.inject({
+        method: "POST",
+        url: "/v1/jobs",
+        headers: a.headers,
+        payload: {
+          kind: "question",
+          requestID: progressiveID,
+          storyID: id,
+          question: "Explain simply",
+          progressiveAudio: true,
+        },
+      });
+      const progressiveJob = await store.db.rpc("claim_job", {
+        worker: worker.id,
+      });
+      const processing = worker.process(progressiveJob.data[0]);
+      await secondSignal;
+      const partial = (
+        await app.inject({
+          method: "GET",
+          url: `/v1/jobs/${progressiveID}`,
+          headers: a.headers,
+        })
+      ).json();
+      assert.equal(partial.status, "running");
+      assert.equal(partial.result.audioComplete, false);
+      assert.equal(partial.result.audioParts.length, 1);
+      assert.match(partial.result.audioParts[0].audioResource, /token=/);
+      assert.equal(
+        (
+          await app.inject({
+            method: "GET",
+            url: `/v1/jobs/${progressiveID}`,
+            headers: b.headers,
+          })
+        ).statusCode,
+        404,
+      );
+      assert.equal((await store.history(a.id, id, [progressiveID])).length, 1);
+      releaseSecond();
+      await processing;
+      const finished = await store.job(progressiveID, a.id);
+      assert.equal(finished.status, "completed");
+      const final = finished.result as any;
+      assert.equal(final.audioComplete, true);
+      assert.equal(final.audioParts.length, 2);
+      assert.equal(final.audioParts[0].id, partial.result.audioParts[0].id);
+      for (const part of final.audioParts) audioFiles.push(part.audioResource);
       assert.equal(
         (
           await app.inject({

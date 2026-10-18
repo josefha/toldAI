@@ -20,8 +20,12 @@ extension AuthRepository {
     func dailyBriefing(interests: [Interest]) async throws -> Briefing
     func podcast(question: String) async throws -> Briefing
     func research(_ request: QuestionRequest) async throws -> ResearchAnswer
+    func research(_ request: QuestionRequest, onReady: @escaping @MainActor (ResearchAnswer) -> Void) async throws -> ResearchAnswer
     func transcribe(_ recording: URL) async throws -> String
     func deleteAccount() async throws
+}
+extension NewsRepository {
+    func research(_ request: QuestionRequest, onReady: @escaping @MainActor (ResearchAnswer) -> Void) async throws -> ResearchAnswer { try await research(request) }
 }
 @MainActor protocol ProfileRepository {
     func save(_ profile: UserProfile) async throws

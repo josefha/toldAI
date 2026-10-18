@@ -119,14 +119,22 @@ import Observation
         let question = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty, phase != .researching else { return }
         task?.cancel(); let id = UUID(); requestID = id; phase = .researching; error = nil
+        let started = Date()
         let request = QuestionRequest(requestID: id, question: question, storyID: playback.story?.id, previousTurns: answers)
         task = Task { [weak self] in
             guard let self else { return }
             do {
-                let answer = try await news.research(request)
+                let answer = try await news.research(request, onReady: { [weak self] partial in
+                    guard let self, self.requestID == id, !Task.isCancelled else { return }
+                    self.answers.append(partial); self.phase = .answered; self.draft = ""
+                    self.playback.playAnswer(partial, requestedAt: started)
+                })
                 guard !Task.isCancelled, requestID == id else { return }
-                answers.append(answer); phase = .answered; draft = ""; playback.playAnswer(answer)
-            } catch is CancellationError { } catch { guard requestID == id else { return }; phase = .failed; self.error = error.localizedDescription }
+                if let existing = answers.firstIndex(where: { $0.id == answer.id }) {
+                    answers[existing] = answer; playback.updateAnswer(answer)
+                } else { answers.append(answer); playback.playAnswer(answer, requestedAt: started) }
+                phase = .answered; draft = ""
+            } catch is CancellationError { } catch { guard requestID == id else { return }; playback.failPendingAnswer(); phase = .failed; self.error = error.localizedDescription }
         }
     }
     func cancel(resume: Bool = false) {

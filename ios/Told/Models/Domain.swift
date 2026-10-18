@@ -52,12 +52,19 @@ enum VoiceModel: String, Codable, CaseIterable, Identifiable {
 }
 struct AuthChallenge: Codable { let email: String; let expiresAt: Date; let resendAt: Date }
 struct UserSession: Codable { let userID: String; let email: String }
+struct AnswerAudioPart: Codable, Identifiable, Hashable {
+    let id: String
+    var audioResource: String
+    let duration: Double
+}
 struct ResearchAnswer: Codable, Identifiable, Hashable {
     let id: String
     let question: String
     let text: String
     let sources: [NewsSource]
     var audioResource: String
+    var audioParts: [AnswerAudioPart]? = nil
+    var audioComplete: Bool? = nil
 }
 struct QuestionRequest: Codable {
     let requestID: UUID
@@ -79,7 +86,7 @@ struct DeepDive: Codable, Identifiable {
     let id: String
     let storyID: String
     let storyPosition: Double
-    let answer: ResearchAnswer
+    var answer: ResearchAnswer
     var parentDiveID: String? = nil
     var parentPosition: Double? = nil
     var audioDuration: Double = 0

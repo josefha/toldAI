@@ -1,5 +1,15 @@
 # Podcast narration trial
 
+## Current iteration — shorter, simpler narration
+
+Daily scripts target 160–210 words per story: one central idea, two essential facts, and at most one meaningful number. Introduce who the story concerns before explaining what changed; define unfamiliar terms immediately. Ten minutes is a ceiling, not a duration to fill. Follow-ups target 30–60 words, with 80–140 words only when the listener explicitly asks for depth. Standalone Ask episodes target 100–160 words. These are prompt targets rather than hard truncation limits.
+
+The local configuration uses `gpt-6-luna` for `OPENAI_SCRIPT_MODEL` and `OPENAI_ANSWER_MODEL`, with reasoning disabled for Luna. Research still uses `OPENAI_MODEL`. Eryn and the selected ElevenLabs v4/v4 Turbo profile settings are retained. The writing/routing response now chooses an allowlisted tone in the same call; normal generation applies it directly, avoiding a separate delivery-direction request. The previous direction planner remains a fallback for callers without a tone. Daily cache version 4 prevents reuse of older scripts. Existing saved episodes keep their original audio.
+
+Player follow-ups opt into progressive audio: generate and validate the answer text, render its opening passage, then publish that playable part while rendering the remainder. The full answer remains one timeline segment, and passage changes do not replay a cue. This is passage-level delivery, not token streaming or a live voice model. Daily and standalone episodes still wait for their full clips. See `TIMING-AND-ROUTING.md` for measurements and failure behavior.
+
+The sections below preserve the earlier trials and their measurements.
+
 Daily stories now use a dedicated editorial prompt in `backend/src/editorial.ts`. Each opens with a conversational topic introduction, explains the development and its relevance, selects two or three essential facts, and ends with a grounded takeaway. Five stories target roughly ten minutes total: 260–290 words each, with shorter scripts when the evidence is thin. This is a writing target, not an enforced audio-duration guarantee. Follow-ups remain direct answers and can supply more depth.
 
 Stories are independently playable and reorderable, so openings must not assume which story came before. Queue-specific transitions and a separate show intro/outro are not implemented. Never invent market moves, reactions or stakes to make a hook. Preserve uncertainty and attribution. Existing saved episodes retain their original audio.

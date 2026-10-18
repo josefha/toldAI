@@ -1,3 +1,4 @@
+import { answerPassages } from "./progressive.js";
 import { deliveryVersion } from "./delivery.js";
 import { measured, timing, withTiming } from "./timing.js";
 import { createHash, randomUUID } from "node:crypto";
@@ -63,6 +64,7 @@ export class Worker {
       script.script,
       model,
       signal,
+      script.tone ?? "calm",
     );
     signal.throwIfAborted();
     const audioResource = await measured(
@@ -102,7 +104,7 @@ export class Worker {
           domains: this.config.NEWS_DOMAINS,
           scriptModel:
             this.config.OPENAI_SCRIPT_MODEL || this.config.OPENAI_MODEL,
-          version: 3,
+          version: 4,
           deliveryVersion,
         }),
       )
@@ -225,7 +227,7 @@ export class Worker {
       const profile = await measured("profile_load", () =>
         this.store.profile(job.user_id),
       );
-      let result: Briefing | Answer;
+      let result!: Briefing | Answer;
       if (job.input.kind === "question") {
         const storyID = job.input.storyID;
         const story = await measured("story_context", () =>
@@ -249,19 +251,72 @@ export class Worker {
           }),
           signal,
         );
-        const rendered = await this.render(
-          script,
-          job.id,
-          profile.answerVoiceModel,
-          signal,
-        );
-        result = {
-          id: job.id,
-          question: job.input.question,
-          text: script.script,
-          sources: script.sources,
-          audioResource: rendered.audioResource,
-        };
+        if (job.input.progressiveAudio) {
+          const passages = answerPassages(script.script);
+          const parts: NonNullable<Answer["audioParts"]> = [];
+          for (const [partIndex, passage] of passages.entries()) {
+            signal.throwIfAborted();
+            const partID = randomUUID();
+            const audio = await this.providers.expressiveSpeech(
+              passage,
+              profile.answerVoiceModel,
+              signal,
+              script.tone ?? "calm",
+            );
+            const audioResource = await measured("storage_upload", () =>
+              this.store.upload(`${partID}.mp3`, audio.audio),
+            );
+            parts.push({ id: partID, audioResource, duration: audio.duration });
+            result = {
+              id: job.id,
+              question: job.input.question,
+              text: script.script,
+              sources: script.sources,
+              audioResource: parts[0]!.audioResource,
+              audioParts: [...parts],
+              audioComplete: partIndex === passages.length - 1,
+            };
+            if (!result.audioComplete) {
+              // Save conversational context before publishing audio so a new question can refer to it.
+              const { error: answerError } = await this.store.db
+                .from("answers")
+                .upsert({
+                  id: job.id,
+                  user_id: job.user_id,
+                  story_id: story.id,
+                  data: result,
+                });
+              check(answerError);
+              const { data: updated, error: updateError } = await this.store.db
+                .from("jobs")
+                .update({ result, updated_at: new Date().toISOString() })
+                .eq("id", job.id)
+                .eq("worker_id", this.id)
+                .eq("status", "running")
+                .select("id");
+              check(updateError);
+              if (!updated?.length)
+                throw new DOMException("Cancelled", "AbortError");
+              timing("answer_first_passage_ready", {
+                audioDurationSeconds: audio.duration,
+              });
+            }
+          }
+        } else {
+          const rendered = await this.render(
+            script,
+            job.id,
+            profile.answerVoiceModel,
+            signal,
+          );
+          result = {
+            id: job.id,
+            question: job.input.question,
+            text: script.script,
+            sources: script.sources,
+            audioResource: rendered.audioResource,
+          };
+        }
         signal.throwIfAborted();
         const { error } = await this.store.db.from("answers").upsert({
           id: job.id,

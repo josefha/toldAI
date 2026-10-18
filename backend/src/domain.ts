@@ -46,12 +46,15 @@ export type Briefing = {
   artworkID: string;
   stories: Story[];
 };
+export type AudioPart = { id: string; audioResource: string; duration: number };
 export type Answer = {
   id: string;
   question: string;
   text: string;
   sources: Source[];
   audioResource: string;
+  audioParts?: AudioPart[];
+  audioComplete?: boolean;
 };
 export const jobInput = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("daily"), requestID: z.string().uuid() }),
@@ -65,6 +68,7 @@ export const jobInput = z.discriminatedUnion("kind", [
     requestID: z.string().uuid(),
     question: z.string().trim().min(1).max(1200),
     storyID: z.string().uuid(),
+    progressiveAudio: z.boolean().default(false),
     previousAnswerIDs: z.array(z.string().uuid()).max(12).default([]),
   }),
 ]);

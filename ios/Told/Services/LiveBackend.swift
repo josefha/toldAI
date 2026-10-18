@@ -145,18 +145,22 @@ enum CredentialStore {
     func load(userID: String) async throws -> UserProfile? { try decoder.decode(UserProfile.self, from: await api("me")) }
     func save(_ profile: UserProfile) async throws { _ = try await api("me", method: "PATCH", body: JSONEncoder().encode(profile)) }
     private struct JobResponse<T: Decodable>: Decodable { let id: String; let status: String; let error: String?; let result: T? }
-    private func job<T: Decodable>(_ body: [String: Any], as type: T.Type) async throws -> T {
+    private func job<T: Decodable>(_ body: [String: Any], as type: T.Type, onReady: ((T) async throws -> Void)? = nil) async throws -> T {
         let id = body["requestID"] as! String
         let started = Date(); var outcome = "failed"
         defer { timingLog.info("stage=client_job jobID=\(id, privacy: .public) status=\(outcome, privacy: .public) durationMs=\(Int(Date().timeIntervalSince(started) * 1000))") }
+        var reportedPartial = false
         do {
             _ = try await api("jobs", method: "POST", body: JSONSerialization.data(withJSONObject: body))
-            for _ in 0..<450 {
+            for _ in 0..<(onReady == nil ? 450 : 1800) {
                 try Task.checkCancellation()
                 let response = try decoder.decode(JobResponse<T>.self, from: await api("jobs/\(id)"))
                 if response.status == "completed", let result = response.result { outcome = "completed"; return result }
                 if response.status == "failed" || response.status == "cancelled" { throw APIError(message: response.error ?? "This request was cancelled.") }
-                try await Task.sleep(for: .seconds(2))
+                if !reportedPartial, response.status == "running", let result = response.result, let onReady {
+                    try await onReady(result); reportedPartial = true
+                }
+                try await Task.sleep(for: .milliseconds(onReady == nil ? 2000 : 500))
             }
             throw APIError(message: "This is taking longer than expected. Please try again.")
         } catch {
@@ -173,9 +177,26 @@ enum CredentialStore {
         return briefing
     }
     func research(_ request: QuestionRequest) async throws -> ResearchAnswer {
+        try await research(request, onReady: { _ in })
+    }
+    func research(_ request: QuestionRequest, onReady: @escaping @MainActor (ResearchAnswer) -> Void) async throws -> ResearchAnswer {
         guard let storyID = request.storyID else { throw APIError(message: "Choose a story before asking a follow-up.") }
-        var answer = try await job(["kind":"question", "requestID":request.requestID.uuidString,"question":request.question,"storyID":storyID,"previousAnswerIDs":request.previousTurns.suffix(12).map(\.id)], as: ResearchAnswer.self)
-        answer.audioResource = try await AudioCache.download(id: answer.id, remote: answer.audioResource); return answer
+        let started = Date()
+        let answer = try await job(["kind":"question", "requestID":request.requestID.uuidString,"question":request.question,"storyID":storyID,"previousAnswerIDs":request.previousTurns.suffix(12).map(\.id),"progressiveAudio":true], as: ResearchAnswer.self, onReady: { partial in
+            let ready = try await self.downloadAnswer(partial)
+            try Task.checkCancellation()
+            timingLog.info("stage=client_first_passage_ready durationMs=\(Int(Date().timeIntervalSince(started) * 1000))")
+            onReady(ready)
+        })
+        return try await downloadAnswer(answer)
+    }
+    private func downloadAnswer(_ value: ResearchAnswer) async throws -> ResearchAnswer {
+        var answer = value
+        if var parts = answer.audioParts, !parts.isEmpty {
+            for i in parts.indices { parts[i].audioResource = try await AudioCache.download(id: parts[i].id, remote: parts[i].audioResource) }
+            answer.audioParts = parts; answer.audioResource = parts[0].audioResource
+        } else { answer.audioResource = try await AudioCache.download(id: answer.id, remote: answer.audioResource) }
+        return answer
     }
     func transcribe(_ recording: URL) async throws -> String {
         let started = Date()
